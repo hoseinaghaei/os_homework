@@ -1,13 +1,40 @@
-1.
+1. gcc -m32 -S recurse.c -o recurse.S
+   	movl	8(%ebp), %eax
+	subl	$1, %eax
+	subl	$12, %esp
+	pushl	%eax
+	call	recur
 
-2.
+2. data section contians the data. for example if you define a int variable like int i = 5; it will heve the 5 value.
+   text section contains the asm codes and the mechine code.	
 
-3.
+3. objdump map.obj -t
 
-4
+4. g: it's global function or variable/object. o: the symbol is the name of an object. *UDF*: the section of the symbol has been refrenced in the dumped file but not defined.
 
-5.
+5. malloc is the global function that defined in the <stdlib.h>. if we compile ths stdlib.c we can find in the symbol table of that object the recur function with F g flags.
 
-6.
+6. like previous example if we compile the recurse.c we can find that in the symbol table.
 
-7.
+recurse.obj:     file format elf32-i386
+
+SYMBOL TABLE:
+00000000 l    df *ABS*	00000000 recurse.c
+00000000 l    d  .text	00000000 .text
+00000000 l    d  .data	00000000 .data
+00000000 l    d  .bss	00000000 .bss
+00000000 l    d  .rodata	00000000 .rodata
+00000000 l    d  .text.__x86.get_pc_thunk.ax	00000000 .text.__x86.get_pc_thunk.ax
+00000000 l    d  .note.GNU-stack	00000000 .note.GNU-stack
+00000000 l    d  .eh_frame	00000000 .eh_frame
+00000000 l    d  .comment	00000000 .comment
+00000000 l    d  .group	00000000 .group
+00000000 g     F .text	00000052 recur
+00000000 g     F .text.__x86.get_pc_thunk.ax	00000000 .hidden __x86.get_pc_thunk.ax
+00000000         *UND*	00000000 _GLOBAL_OFFSET_TABLE_
+00000000         *UND*	00000000 printf
+
+
+7.we first append the 2 symbol tables to "symbol.txt" using these 2 commans: objdump map.obj -t > symbol.txt , objdump map -t >> symbol.txt
+  aligment, section and the flags of recur function has changed due linking the 2 files.
+  aligment of the main funcion also changed. after all a lot of new symbols has been added.

@@ -1,4 +1,33 @@
 GDB Practice:
+	1. gdb map
+	2. break map.c:16
+	3. run
+	4. print argv # result : 0x7fffffffe388
+	5. print *argv # result : 0x7fffffffe610 "/home/vagrant/code/handouts/HW0/map"
+	6. next 3, step
+	7. print recur, x/s recur # result : 0x5555555546cd
+	8. next 3, step
+	9. next 2
+	10. layout asm 
+	11. ni 5
+	12. layout reg
+		rax = 1, rbx = rcx = rdx = 0, rsi = 93824994337600, rdi = 1, rbp = 0x7fffffffe230, rsp = 0x7fffffffe210, r8=r9=r10 = 0, r11 = 582, r12 = 93824992232832, r13 = 140737488348032
+		r14 = r15 = 0, rip = 0x555555554702, eflags = [IF], cs = 51, ss = 43, ds = es = fs = gs = 0
+	13: si
+	14: layout src
+	15: bt or where
+	16: break recur if i == 0
+	17: continue
+	18: bt
+	19: up 4, print argc # result : 1
+	20: next
+	21: mov    $0x0,%eax
+	22: layout src
+	23: ni 3
+	24: continue
+	25: quit
+	
+	
 
 آ.
 

@@ -1,0 +1,9 @@
+here i will list problems that i had in this homework:
+	1. I use shadowsocks as vpn so i must proxy the terminal to get the vagrant. so i use proxychains for it but did not work, so i downloaded the executable of vagrant
+		and change the $PATH in ~./bashrc to use it as global.
+	2. just like above, the vagrant up command faild. this time i used Shekan.ir.
+	3. i forgot almost everything about pointer in c. so i read a bit.
+	4. In the doc was mentioned that we have to write big Makefile in the future, so i see some documents and toturials in the Youtube.
+	5. My running os is Ubuntu. the doc has no hints about editing the code in VM. then i search a little to find the way.
+	6. for the lack of time i skipped some parts like tmux. however i read about it before deadline.
+	7. In the c code, i got segmentation error many times, i moved ahead an after learing the gdb came back and debug it.

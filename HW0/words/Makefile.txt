@@ -1,0 +1,27 @@
+.DEFAULT_GOAL := default # when we run "make" command without specifying the target, it will run the first target. but if we wanna say make to run which target, that's the way.
+
+CC?=gcc # Lines 3:8 all are variable; we can use them in this file or when we running the make command. CC is a c compiler. 
+CFLAGS?=-Wall # this is an option for printing out warnings of compiler.
+SOURCES=main.c word_count.c # which source files we wanna run?
+# comment the following out if you are providing your own sort_words
+LIBRARIES=wc_sort.o # which binary files we wanna run?
+BINARIES=words # where to write output executable file?
+
+%: %.c
+	$(CC) $(CFLAGS) $(LIBRARIES) -o $@ $^     
+	
+# make object file from .c files.
+
+clean:
+	rm -f $(BINARIES)
+# we can run this target using "make clean" to remove all executable filea that have been created.
+
+executable:
+	$(CC) $(CFLAGS) $(SOURCES) $(LIBRARIES) -o $(BINARIES)
+	
+# this target has no dependencies. just run below command to compile the project.
+# gcc -Wall main.c word_count.c wc_sort.o -o words
+
+default: executable
+# the first target that will be run is this. we can specify the dependencies of a target just like we did for "default".
+
