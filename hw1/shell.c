@@ -146,7 +146,7 @@ int shell (int argc, char *argv[]) {
 
   lineNum=0;
   // fprintf(stdout, "%d: ", lineNum);
-       while ((s = freadln(stdin))) {
+        while ((s = freadln(stdin))) {
         t = getToks(s); /* break the line into tokens */
         fundex = lookup(t[0]); /* Is first token a shell literal */
         if (fundex >= 0)
@@ -155,28 +155,45 @@ int shell (int argc, char *argv[]) {
             pid_t child_pid = fork();
             if (child_pid < 0) {
                 printf("can't fork, error occurred\n");
-                exit(EXIT_FAILURE);
             } else if (child_pid == 0) {
-                execv(t[0],t);
+		execv(t[0], t);
+                const char *executable_path = t[0];
+                char *path = getenv("PATH");
+                tok_t *path_variables = getToks(path);
+                char *real_path = (char *) malloc(sizeof(char) * 1024);
+                for (int i = 0; i < MAXTOKS; ++i) {
+                    strcat(real_path, path_variables[i]);
+                    strcat(real_path, "/");
+                    strcat(real_path, executable_path);
+                    strcat(real_path, "\0");
+                    t[0] = real_path;
+                    execv(t[0], t);
+                    memset(real_path, 0, sizeof(char) * 1024);
+                }
+                printf("No Executable file has been found!");
                 exit(EXIT_SUCCESS);
             } else {
                 int status;
                 if (waitpid(child_pid, &status, 0) > 0) {
-                   if (WIFEXITED(status) && WEXITSTATUS(status)) {
+                    if (WIFEXITED(status) && !WEXITSTATUS(status))
+                        printf("program execution successful\n");
+                    else if (WIFEXITED(status) && WEXITSTATUS(status)) {
                         if (WEXITSTATUS(status) == 127)
                             printf("execv failed\n");
                         else
                             printf("program terminated normally, but returned a non-zero status\n");
                     }
-                   else
+                    else
                         printf("program didn't terminate normally\n");
                 }
-                else
+                else {
                     printf("waitpid() failed\n");
             }
         }
         // fprintf(stdout, "%d: ", lineNum);
     }
+    }
+
 
 
   return 0;
