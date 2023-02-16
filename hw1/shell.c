@@ -25,6 +25,32 @@ int cmd_quit(tok_t arg[]) {
 
 int cmd_help(tok_t arg[]);
 
+int cmd_pwd(tok_t arg[]) {
+    size_t size = sizeof(char) * 256;
+    char *path = getcwd(NULL, size);
+    if (path != NULL)
+        printf("%s\n", path);
+    else
+        printf("error in getcwd()");
+}
+
+int cmd_cd(tok_t arg[]) {
+    if (arg[0] == NULL) {
+        cmd_pwd(arg);
+        return 1;
+    }
+
+    int res = chdir(arg[0]);
+    if (res != 0)
+        printf("%s : No such file or directory\n", arg[0]);
+    else
+    	cmd_pwd(arg);
+    
+    return 0;
+}
+
+
+
 
 /* Command Lookup table */
 typedef int cmd_fun_t (tok_t args[]); /* cmd functions take token array and return int */
@@ -35,8 +61,10 @@ typedef struct fun_desc {
 } fun_desc_t;
 
 fun_desc_t cmd_table[] = {
-  {cmd_help, "?", "show this help menu"},
-  {cmd_quit, "quit", "quit the command shell"},
+        {cmd_help, "?",    "show this help menu"},
+        {cmd_quit, "quit", "quit the command shell"},
+        {cmd_pwd,  "pwd",  "get the current working directory"},
+        {cmd_cd,   "cd",   "change the current directory to provided one"}
 };
 
 int cmd_help(tok_t arg[]) {
