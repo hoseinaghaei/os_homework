@@ -29,7 +29,7 @@ int cmd_pwd(tok_t arg[]) {
     size_t size = sizeof(char) * 256;
     char *path = getcwd(NULL, size);
     if (path != NULL)
-        printf("%s\n", path);
+        printf("%s", path);
     else
         printf("error in getcwd()");
 }
