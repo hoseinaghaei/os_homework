@@ -142,18 +142,42 @@ int shell (int argc, char *argv[]) {
 
   init_shell();
 
-  // printf("%s running as PID %d under %d\n",argv[0],pid,ppid);
+  printf("%s running as PID %d under %d\n",argv[0],pid,ppid);
 
   lineNum=0;
   // fprintf(stdout, "%d: ", lineNum);
-  while ((s = freadln(stdin))){
-    t = getToks(s); /* break the line into tokens */
-    fundex = lookup(t[0]); /* Is first token a shell literal */
-    if(fundex >= 0) cmd_table[fundex].fun(&t[1]);
-    else {
-      fprintf(stdout, "This shell only supports built-ins. Replace this to run programs as commands.\n");
+       while ((s = freadln(stdin))) {
+        t = getToks(s); /* break the line into tokens */
+        fundex = lookup(t[0]); /* Is first token a shell literal */
+        if (fundex >= 0)
+            cmd_table[fundex].fun(&t[1]);
+        else {
+            pid_t child_pid = fork();
+            if (child_pid < 0) {
+                printf("can't fork, error occurred\n");
+                exit(EXIT_FAILURE);
+            } else if (child_pid == 0) {
+                execv(t[0],t);
+                exit(EXIT_SUCCESS);
+            } else {
+                int status;
+                if (waitpid(child_pid, &status, 0) > 0) {
+                   if (WIFEXITED(status) && WEXITSTATUS(status)) {
+                        if (WEXITSTATUS(status) == 127)
+                            printf("execv failed\n");
+                        else
+                            printf("program terminated normally, but returned a non-zero status\n");
+                    }
+                   else
+                        printf("program didn't terminate normally\n");
+                }
+                else
+                    printf("waitpid() failed\n");
+            }
+        }
+        // fprintf(stdout, "%d: ", lineNum);
     }
-    // fprintf(stdout, "%d: ", lineNum);
-  }
+
+
   return 0;
 }
