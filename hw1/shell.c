@@ -150,7 +150,7 @@ int shell (int argc, char *argv[]) {
         else {
             pid_t child_pid = fork();
             if (child_pid < 0) {
-                printf("can't fork, error occurred\n");
+                continue;
             } else if (child_pid == 0) {
 		execv(t[0], t);
                 const char *executable_path = t[0];
@@ -166,31 +166,14 @@ int shell (int argc, char *argv[]) {
                     execv(t[0], t);
                     memset(real_path, 0, sizeof(char) * 1024);
                 }
-                printf("No Executable file has been found!");
                 exit(EXIT_SUCCESS);
             } else {
                 int status;
-                if (waitpid(child_pid, &status, 0) > 0) {
-                    if (WIFEXITED(status) && !WEXITSTATUS(status))
-                        printf("program execution successful\n");
-                    else if (WIFEXITED(status) && WEXITSTATUS(status)) {
-                        if (WEXITSTATUS(status) == 127)
-                            printf("execv failed\n");
-                        else
-                            printf("program terminated normally, but returned a non-zero status\n");
-                    }
-                    else
-                        printf("program didn't terminate normally\n");
-                }
-                else {
-                    printf("waitpid() failed\n");
+                waitpid(child_pid, &status, 0);
             }
         }
         // fprintf(stdout, "%d: ", lineNum);
     }
-    }
-
-
 
   return 0;
 }
