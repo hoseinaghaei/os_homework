@@ -7,6 +7,8 @@
 #include <termios.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <fcntl.h>
+
 
 #define FALSE 0
 #define TRUE 1
@@ -152,6 +154,26 @@ int shell (int argc, char *argv[]) {
             if (child_pid < 0) {
                 continue;
             } else if (child_pid == 0) {
+            	for (int i = 1; t[i] && i < MAXTOKS; ++i) {
+                    if (strcmp(t[i], "<") == 0) {
+                        FILE *infile = fopen(t[i+1], "r");
+                        char *new_arg = (char *) malloc(sizeof(char) * 128);
+                        int j = i;
+                        while (fscanf(infile, "%s", new_arg) != EOF)  {
+                            t[j] = new_arg;
+                            j++;
+                        }
+                        t[j] = NULL;
+                        break;
+                    } else if (strcmp(t[i], ">") == 0) {
+                        printf("file >: %s", t[i+1]);
+                        int file_desc = open(t[i+1], O_CREAT | O_RDWR, S_IRWXU);
+                        dup2(file_desc, 1) ;
+                        t[i] = NULL;
+                        break;
+                    }
+                }
+                
 		execv(t[0], t);
                 const char *executable_path = t[0];
                 char *path = getenv("PATH");
