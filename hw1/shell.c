@@ -166,7 +166,6 @@ int shell (int argc, char *argv[]) {
                         t[j] = NULL;
                         break;
                     } else if (strcmp(t[i], ">") == 0) {
-                        printf("file >: %s", t[i+1]);
                         int file_desc = open(t[i+1], O_CREAT | O_RDWR, S_IRWXU);
                         dup2(file_desc, 1) ;
                         t[i] = NULL;
