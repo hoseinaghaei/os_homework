@@ -138,7 +138,7 @@ int shell (int argc, char *argv[]) {
 
   init_shell();
 
-  printf("%s running as PID %d under %d\n",argv[0],pid,ppid);
+ // printf("%s running as PID %d under %d\n",argv[0],pid,ppid);
 
   lineNum=0;
   // fprintf(stdout, "%d: ", lineNum);
