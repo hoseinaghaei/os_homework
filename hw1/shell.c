@@ -182,7 +182,7 @@ int shell(int argc, char *argv[]) {
                                 strcpy(copy_arg, new_arg);
                                 t[j] = copy_arg;
                                 t[j+1] = NULL;
-                                printf("t : %s", t[j]);
+                                //printf("t : %s", t[j]);
                                 j++;
                                 memset(new_arg, 0, size);
                                 k = 0;
