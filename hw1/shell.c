@@ -178,7 +178,7 @@ int shell(int argc, char *argv[]) {
                         int k = 0;
                         while ((c = (char) fgetc(infile)) != EOF) {
                             if (!isspace(last_char) && isspace(c)) {
-                            	new_arg[k] = NULL;
+                            	new_arg[k] = '\0';
                                 char *copy_arg = (char *) malloc(size);
                                 strcpy(copy_arg, new_arg);
                                 t[j] = copy_arg;
@@ -197,7 +197,7 @@ int shell(int argc, char *argv[]) {
 
                      
                         t[j] = NULL;
-                                                           //printf("J : %d", j);
+                                                            //printf("J : %d", j);
                                                // printf("%s\n", t[j]);
                     } else
                         t[update_arg_index] = NULL;
