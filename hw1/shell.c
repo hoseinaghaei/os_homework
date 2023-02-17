@@ -174,18 +174,29 @@ int shell (int argc, char *argv[]) {
                 }
                 if (read_file_address != NULL) {
                     FILE *infile = fopen(t[read_index], "r");
-                    if (infile != NULL) {
-                    	                    char *new_arg = (char *) malloc(sizeof(char) * 128);
-                    int j = update_arg_index;
-                    while (fscanf(infile, "%s", new_arg) != EOF)  {
-                         char *copy_arg = (char *) malloc(sizeof(char) * 128);
-                            strcpy(copy_arg, new_arg);
-                            t[j] = copy_arg;
-                            j++;
-                    }
-                    t[j] = NULL;
+                     if (infile != NULL) {
+                        size_t size = sizeof(char) * 1024;
+                        char *new_arg = (char *) malloc(size);
+                        int j = update_arg_index;
+                        char c;
+                        char last_char = NULL;
+                        int k = 0;
+                        while ((c = (char) fgetc(infile)) != EOF) {
+                            if (isalpha(last_char) && !isalpha(c)) {
+                                char *copy_arg = (char *) malloc(size);
+                                strcpy(copy_arg, new_arg);
+                                t[j] = copy_arg;
+                                j++;
+                                memset(new_arg, 0, size);
+                                k = 0;
+                            }
+                            new_arg[k] = c;
+                            k++;
+                            last_char = c;
+                        }
+                        t[j] = NULL;
                     } else
-                    	t[update_arg_index] = NULL;
+                        t[update_arg_index] = NULL;
                 }
 
                 execv(t[0], t);
