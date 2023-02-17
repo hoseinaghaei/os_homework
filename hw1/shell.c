@@ -48,10 +48,8 @@ int cmd_cd(tok_t arg[]) {
 }
 
 
-
-
 /* Command Lookup table */
-typedef int cmd_fun_t (tok_t args[]); /* cmd functions take token array and return int */
+typedef int cmd_fun_t(tok_t args[]); /* cmd functions take token array and return int */
 typedef struct fun_desc {
     cmd_fun_t *fun;
     char *cmd;
@@ -67,22 +65,21 @@ fun_desc_t cmd_table[] = {
 
 int cmd_help(tok_t arg[]) {
     int i;
-    for (i=0; i < (sizeof(cmd_table)/sizeof(fun_desc_t)); i++) {
-        printf("%s - %s\n",cmd_table[i].cmd, cmd_table[i].doc);
+    for (i = 0; i < (sizeof(cmd_table) / sizeof(fun_desc_t)); i++) {
+        printf("%s - %s\n", cmd_table[i].cmd, cmd_table[i].doc);
     }
     return 1;
 }
 
 int lookup(char cmd[]) {
     int i;
-    for (i=0; i < (sizeof(cmd_table)/sizeof(fun_desc_t)); i++) {
+    for (i = 0; i < (sizeof(cmd_table) / sizeof(fun_desc_t)); i++) {
         if (cmd && (strcmp(cmd_table[i].cmd, cmd) == 0)) return i;
     }
     return -1;
 }
 
-void init_shell()
-{
+void init_shell() {
     /* Check if we are running interactively */
     shell_terminal = STDIN_FILENO;
 
@@ -90,15 +87,15 @@ void init_shell()
         is not interactive */
     shell_is_interactive = isatty(shell_terminal);
 
-    if(shell_is_interactive){
+    if (shell_is_interactive) {
 
         /* force into foreground */
-        while(tcgetpgrp (shell_terminal) != (shell_pgid = getpgrp()))
-            kill( - shell_pgid, SIGTTIN);
+        while (tcgetpgrp(shell_terminal) != (shell_pgid = getpgrp()))
+            kill(-shell_pgid, SIGTTIN);
 
         shell_pgid = getpid();
         /* Put shell in its own process group */
-        if(setpgid(shell_pgid, shell_pgid) < 0){
+        if (setpgid(shell_pgid, shell_pgid) < 0) {
             perror("Couldn't put the shell in its own process group");
             exit(1);
         }
@@ -113,36 +110,33 @@ void init_shell()
 /**
  * Add a process to our process list
  */
-void add_process(process* p)
-{
+void add_process(process *p) {
     /** YOUR CODE HERE */
 }
 
 /**
  * Creates a process given the inputString from stdin
  */
-process* create_process(char* inputString)
-{
+process *create_process(char *inputString) {
     /** YOUR CODE HERE */
     return NULL;
 }
 
 
-
-int shell (int argc, char *argv[]) {
-    char *s = malloc(INPUT_STRING_SIZE+1);			/* user input string */
-    tok_t *t;			/* tokens parsed from input */
+int shell(int argc, char *argv[]) {
+    char *s = malloc(INPUT_STRING_SIZE + 1);            /* user input string */
+    tok_t *t;            /* tokens parsed from input */
     int lineNum = 0;
     int fundex = -1;
-    pid_t pid = getpid();		/* get current processes PID */
-    pid_t ppid = getppid();	/* get parents PID */
+    pid_t pid = getpid();        /* get current processes PID */
+    pid_t ppid = getppid();    /* get parents PID */
     pid_t cpid, tcpid, cpgid;
 
     init_shell();
 
     // printf("%s running as PID %d under %d\n",argv[0],pid,ppid);
 
-    lineNum=0;
+    lineNum = 0;
     // fprintf(stdout, "%d: ", lineNum);
     while ((s = freadln(stdin))) {
         t = getToks(s); /* break the line into tokens */
@@ -161,12 +155,12 @@ int shell (int argc, char *argv[]) {
                 for (int i = 1; t[i] && i < MAXTOKS; ++i) {
                     if (strcmp(t[i], "<") == 0) {
                         read_file_address = t[i + 1];
-                        read_index = i+1;
+                        read_index = i + 1;
                         if (i < update_arg_index)
                             update_arg_index = i;
                     } else if (strcmp(t[i], ">") == 0) {
-                        int file_desc = open(t[i+1], O_CREAT | O_WRONLY | O_TRUNC, S_IRWXU);
-                        dup2(file_desc, 1) ;
+                        int file_desc = open(t[i + 1], O_CREAT | O_WRONLY | O_TRUNC, S_IRWXU);
+                        dup2(file_desc, 1);
                         t[i] = NULL;
                         if (i < update_arg_index)
                             update_arg_index = i;
@@ -174,7 +168,7 @@ int shell (int argc, char *argv[]) {
                 }
                 if (read_file_address != NULL) {
                     FILE *infile = fopen(t[read_index], "r");
-                     if (infile != NULL) {
+                    if (infile != NULL) {
                         size_t size = sizeof(char) * 1024;
                         char *new_arg = (char *) malloc(size);
                         int j = update_arg_index;
@@ -182,10 +176,13 @@ int shell (int argc, char *argv[]) {
                         char last_char = NULL;
                         int k = 0;
                         while ((c = (char) fgetc(infile)) != EOF) {
-                            if (isalpha(last_char) && !isalpha(c)) {
+                            if (!isspace(last_char) && isspace(c)) {
+                            	new_arg[k] = NULL;
                                 char *copy_arg = (char *) malloc(size);
                                 strcpy(copy_arg, new_arg);
                                 t[j] = copy_arg;
+                                t[j+1] = NULL;
+                                printf("t : %s", t[j]);
                                 j++;
                                 memset(new_arg, 0, size);
                                 k = 0;
@@ -194,7 +191,12 @@ int shell (int argc, char *argv[]) {
                             k++;
                             last_char = c;
                         }
+                        //printf("%s\n", t[j]);
+                       // printf("new %s\n", new_arg);
+
+                     
                         t[j] = NULL;
+                                               // printf("%s\n", t[j]);
                     } else
                         t[update_arg_index] = NULL;
                 }
