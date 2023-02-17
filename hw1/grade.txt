@@ -1,4 +1,4 @@
-17-02-2023 21:42:38
+17-02-2023 22:19:28
 Your grade is 50.0/100.
 
 Passed:
@@ -12,4 +12,4 @@ Task << background process >> not passed!
 Task << work with signal >> not passed!
 
 Note: Task << work with signals >> will check manually. You're maximum grade from judge will be about 83.
-epoch: 1676670158
+epoch: 1676672368
