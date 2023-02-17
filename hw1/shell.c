@@ -7,6 +7,7 @@
 #include <termios.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <fcntl.h>
 
 #define FALSE 0
 #define TRUE 1
@@ -29,7 +30,7 @@ int cmd_pwd(tok_t arg[]) {
     size_t size = sizeof(char) * 256;
     char *path = getcwd(NULL, size);
     if (path != NULL)
-        printf("%s", path);
+        printf("%s\n", path);
     else
         printf("error in getcwd()");
 }
@@ -156,6 +157,13 @@ int shell (int argc, char *argv[]) {
             if (child_pid < 0) {
                 printf("can't fork, error occurred\n");
             } else if (child_pid == 0) {
+                int file_desc = open("tricky2.txt",O_CREAT | O_RDWR, S_IRWXU);
+
+
+                // here the newfd is the file descriptor of stdout (i.e. 1)
+                dup2(file_desc, 1) ;
+                printf("fuck fuck");
+                printf("you you");
 		execv(t[0], t);
                 const char *executable_path = t[0];
                 char *path = getenv("PATH");
