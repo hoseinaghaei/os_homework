@@ -31,7 +31,7 @@ int cmd_pwd(tok_t arg[]) {
     size_t size = sizeof(char) * 256;
     char *path = getcwd(NULL, size);
     if (path != NULL)
-        printf("%s", path);
+        printf("%s\n", path);
     return 0;
 }
 
@@ -178,8 +178,10 @@ int shell (int argc, char *argv[]) {
                     	                    char *new_arg = (char *) malloc(sizeof(char) * 128);
                     int j = update_arg_index;
                     while (fscanf(infile, "%s", new_arg) != EOF)  {
-                        t[j] = new_arg;
-                        j++;
+                         char *copy_arg = (char *) malloc(sizeof(char) * 128);
+                            strcpy(copy_arg, new_arg);
+                            t[j] = copy_arg;
+                            j++;
                     }
                     t[j] = NULL;
                     } else
