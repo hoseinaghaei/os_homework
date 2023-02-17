@@ -171,9 +171,10 @@ int shell(int argc, char *argv[]) {
                     if (infile != NULL) {
                         size_t size = sizeof(char) * 1024;
                         char *new_arg = (char *) malloc(size);
+                        //printf("update_arg_index : %d\n", update_arg_index);
                         int j = update_arg_index;
                         char c;
-                        char last_char = NULL;
+                        char last_char = ' ';
                         int k = 0;
                         while ((c = (char) fgetc(infile)) != EOF) {
                             if (!isspace(last_char) && isspace(c)) {
@@ -196,12 +197,14 @@ int shell(int argc, char *argv[]) {
 
                      
                         t[j] = NULL;
+                                                           //printf("J : %d", j);
                                                // printf("%s\n", t[j]);
                     } else
                         t[update_arg_index] = NULL;
-                }
+                        
 
-                execv(t[0], t);
+                }
+   execv(t[0], t);
                 const char *executable_path = t[0];
                 char *path = getenv("PATH");
                 tok_t *path_variables = getToks(path);
@@ -215,6 +218,7 @@ int shell(int argc, char *argv[]) {
                     execv(t[0], t);
                     memset(real_path, 0, sizeof(char) * 1024);
                 }
+
                 exit(EXIT_SUCCESS);
             } else {
                 int status;
