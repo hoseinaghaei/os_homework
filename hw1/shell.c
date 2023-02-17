@@ -165,7 +165,7 @@ int shell (int argc, char *argv[]) {
                         if (i < update_arg_index)
                             update_arg_index = i;
                     } else if (strcmp(t[i], ">") == 0) {
-                        int file_desc = open(t[i+1], O_CREAT | O_RDWR, S_IRWXU);
+                        int file_desc = open(t[i+1], O_CREAT | O_WRONLY | O_TRUNC, S_IRWXU);
                         dup2(file_desc, 1) ;
                         t[i] = NULL;
                         if (i < update_arg_index)
