@@ -174,13 +174,16 @@ int shell (int argc, char *argv[]) {
                 }
                 if (read_file_address != NULL) {
                     FILE *infile = fopen(t[read_index], "r");
-                    char *new_arg = (char *) malloc(sizeof(char) * 128);
+                    if (infile != NULL) {
+                    	                    char *new_arg = (char *) malloc(sizeof(char) * 128);
                     int j = update_arg_index;
                     while (fscanf(infile, "%s", new_arg) != EOF)  {
                         t[j] = new_arg;
                         j++;
                     }
                     t[j] = NULL;
+                    } else
+                    	t[update_arg_index] = NULL;
                 }
 
                 execv(t[0], t);
