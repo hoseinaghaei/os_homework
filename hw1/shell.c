@@ -122,6 +122,19 @@ process *create_process(char *inputString) {
     return NULL;
 }
 
+void removeTok(tok_t *toks, int index, size_t size_to_remove)
+{
+  for (int i = index; i < index + size_to_remove; i++)
+  {
+    toks[i] = NULL;
+  }
+  for (int i = index + size_to_remove; i < MAXTOKS - 1 && toks[i] != NULL; i++)
+  {
+    toks[i - size_to_remove] = toks[i];
+    toks[i] = NULL;
+  }
+}
+
 
 int shell(int argc, char *argv[]) {
     char *s = malloc(INPUT_STRING_SIZE + 1);            /* user input string */
@@ -154,56 +167,18 @@ int shell(int argc, char *argv[]) {
                 int update_arg_index = MAXTOKS;
                 for (int i = 1; t[i] && i < MAXTOKS; ++i) {
                     if (strcmp(t[i], "<") == 0) {
-                        read_file_address = t[i + 1];
-                        read_index = i + 1;
-                        if (i < update_arg_index)
-                            update_arg_index = i;
+                     int file_desc = open(t[i + 1], O_RDONLY);
+                    if (file_desc != -1) {
+                    	dup2(file_desc, 0);
+                    	removeTok(t, i, 2);
+                    }
                     } else if (strcmp(t[i], ">") == 0) {
                         int file_desc = open(t[i + 1], O_CREAT | O_WRONLY | O_TRUNC, S_IRWXU);
                         dup2(file_desc, 1);
-                        t[i] = NULL;
-                        if (i < update_arg_index)
-                            update_arg_index = i;
+                                            	removeTok(t, i, 1);
                     }
                 }
-                if (read_file_address != NULL) {
-                    FILE *infile = fopen(t[read_index], "r");
-                    if (infile != NULL) {
-                        size_t size = sizeof(char) * 1024;
-                        char *new_arg = (char *) malloc(size);
-                        //printf("update_arg_index : %d\n", update_arg_index);
-                        int j = update_arg_index;
-                        char c;
-                        char last_char = ' ';
-                        int k = 0;
-                        while ((c = (char) fgetc(infile)) != EOF) {
-                            if (!isspace(last_char) && isspace(c)) {
-                            	new_arg[k] = '\0';
-                                char *copy_arg = (char *) malloc(size);
-                                strcpy(copy_arg, new_arg);
-                                t[j] = copy_arg;
-                                t[j+1] = NULL;
-                                //printf("t : %s", t[j]);
-                                j++;
-                                memset(new_arg, 0, size);
-                                k = 0;
-                            }
-                            new_arg[k] = c;
-                            k++;
-                            last_char = c;
-                        }
-                        //printf("%s\n", t[j]);
-                       // printf("new %s\n", new_arg);
-
-                     
-                        t[j] = NULL;
-                                                            //printf("J : %d", j);
-                                               // printf("%s\n", t[j]);
-                    } else
-                        t[update_arg_index] = NULL;
-                        
-
-                }
+               
    execv(t[0], t);
                 const char *executable_path = t[0];
                 char *path = getenv("PATH");
