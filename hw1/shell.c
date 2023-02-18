@@ -164,7 +164,6 @@ int shell(int argc, char *argv[]) {
                 waitpid(child_pid, &status, 0);
             }
         }
-        // fprintf(stdout, "%d: ", lineNum);
     }
 
     return 0;
