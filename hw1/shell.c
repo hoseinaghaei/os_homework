@@ -164,10 +164,8 @@ int shell(int argc, char *argv[]) {
                 int in_index = isDirectTok(t, "<");
                 if (in_index > 0) {
                     int in_file_desc = open(t[in_index + 1], O_RDONLY);
-                    if (in_file_desc != -1) {
                         dup2(in_file_desc, STDIN_FILENO);
 			t[in_index] = t[in_index+1] = NULL;
-                    }
                 }
                 int out_index = isDirectTok(t, ">");
                 if (out_index > 0) {
