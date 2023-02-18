@@ -124,15 +124,15 @@ process *create_process(char *inputString) {
 
 void removeTok(tok_t *toks, int index, size_t size_to_remove)
 {
-  for (int i = index; i < index + size_to_remove; i++)
-  {
-    toks[i] = NULL;
-  }
-  for (int i = index + size_to_remove; i < MAXTOKS - 1 && toks[i] != NULL; i++)
-  {
-    toks[i - size_to_remove] = toks[i];
-    toks[i] = NULL;
-  }
+    for (int i = index; i < index + size_to_remove; i++)
+    {
+        toks[i] = NULL;
+    }
+    for (int i = index + size_to_remove; i < MAXTOKS - 1 && toks[i] != NULL; i++)
+    {
+        toks[i - size_to_remove] = toks[i];
+        toks[i] = NULL;
+    }
 }
 
 
@@ -161,25 +161,22 @@ int shell(int argc, char *argv[]) {
             if (child_pid < 0) {
                 continue;
             } else if (child_pid == 0) {
-                char *read_file_address = (char *) malloc(sizeof(char) * FILENAME_MAX);
-                read_file_address = NULL;
-                int read_index;
-                int update_arg_index = MAXTOKS;
-                for (int i = 1; t[i] && i < MAXTOKS; ++i) {
-                    if (strcmp(t[i], "<") == 0) {
-                     int file_desc = open(t[i + 1], O_RDONLY);
-                    if (file_desc != -1) {
-                    	dup2(file_desc, 0);
-                    	removeTok(t, i, 2);
-                    }
-                    } else if (strcmp(t[i], ">") == 0) {
-                        int file_desc = open(t[i + 1], O_CREAT | O_WRONLY | O_TRUNC, S_IRWXU);
-                        dup2(file_desc, 1);
-                                            	removeTok(t, i, 1);
+                int in_index = isDirectTok(t, "<");
+                if (in_index > 0) {
+                    int in_file_desc = open(t[in_index + 1], O_RDONLY);
+                    if (in_file_desc != -1) {
+                        dup2(in_file_desc, STDIN_FILENO);
+			t[in_index] = t[in_index+1] = NULL;
                     }
                 }
-               
-   execv(t[0], t);
+                int out_index = isDirectTok(t, ">");
+                if (out_index > 0) {
+                    int file_desc = open(t[out_index + 1], O_CREAT | O_WRONLY | O_TRUNC, S_IRWXU);
+                    dup2(file_desc, STDOUT_FILENO);
+                    t[out_index] = t[out_index+1] = NULL;
+                    removeTok(t, out_index, 1);
+                }
+ execv(t[0], t);
                 const char *executable_path = t[0];
                 char *path = getenv("PATH");
                 tok_t *path_variables = getToks(path);
@@ -195,6 +192,7 @@ int shell(int argc, char *argv[]) {
                 }
 
                 exit(EXIT_SUCCESS);
+               
             } else {
                 int status;
                 waitpid(child_pid, &status, 0);
