@@ -186,7 +186,7 @@ void redirect_io(tok_t *tokens) {
 }
 
 void find_program_path(tok_t *tokens) {
-    if (access(tokens[0], F_OK)) {
+    if (access(tokens[0], F_OK) == 0) {
         return;
     }
     const char *executable_path = tokens[0];
@@ -194,7 +194,7 @@ void find_program_path(tok_t *tokens) {
     tok_t *path_variables = getToks(environment_path);
     for (int i = 0; i < MAXTOKS - 1 && path_variables[i]; ++i) {
         char *test_path = create_path(executable_path, path_variables[i]);
-        if (access(test_path, F_OK)) {
+        if (access(test_path, F_OK) == 0) {
             tokens[0] = test_path;
             return;
         }
