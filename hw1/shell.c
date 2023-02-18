@@ -13,6 +13,8 @@
 #define FALSE 0
 #define TRUE 1
 #define INPUT_STRING_SIZE 80
+#define REDIRECT_IN "<"
+#define REDIRECT_OUT ">"
 
 #include "io.h"
 #include "parse.h"
@@ -26,6 +28,12 @@ int cmd_quit(tok_t arg[]) {
 }
 
 int cmd_help(tok_t arg[]);
+
+char *create_path(const char *executable_path, tok_t path_variable);
+
+void find_program_path(tok_t *pString);
+
+void redirect_io(tok_t *tokens);
 
 int cmd_pwd(tok_t arg[]) {
     size_t size = sizeof(char) * 256;
@@ -122,19 +130,6 @@ process *create_process(char *inputString) {
     return NULL;
 }
 
-void removeTok(tok_t *toks, int index, size_t size_to_remove)
-{
-    for (int i = index; i < index + size_to_remove; i++)
-    {
-        toks[i] = NULL;
-    }
-    for (int i = index + size_to_remove; i < MAXTOKS - 1 && toks[i] != NULL; i++)
-    {
-        toks[i - size_to_remove] = toks[i];
-        toks[i] = NULL;
-    }
-}
-
 
 int shell(int argc, char *argv[]) {
     char *s = malloc(INPUT_STRING_SIZE + 1);            /* user input string */
@@ -161,36 +156,9 @@ int shell(int argc, char *argv[]) {
             if (child_pid < 0) {
                 continue;
             } else if (child_pid == 0) {
-                int in_index = isDirectTok(t, "<");
-                if (in_index > 0) {
-                    int in_file_desc = open(t[in_index + 1], O_RDONLY);
-                        dup2(in_file_desc, STDIN_FILENO);
-			t[in_index] = t[in_index+1] = NULL;
-                }
-                int out_index = isDirectTok(t, ">");
-                if (out_index > 0) {
-                    int file_desc = open(t[out_index + 1], O_CREAT | O_WRONLY | O_TRUNC, S_IRWXU);
-                    dup2(file_desc, STDOUT_FILENO);
-                    t[out_index] = t[out_index+1] = NULL;
-                    removeTok(t, out_index, 1);
-                }
- execv(t[0], t);
-                const char *executable_path = t[0];
-                char *path = getenv("PATH");
-                tok_t *path_variables = getToks(path);
-                char *real_path = (char *) malloc(sizeof(char) * 1024);
-                for (int i = 0; i < MAXTOKS; ++i) {
-                    strcat(real_path, path_variables[i]);
-                    strcat(real_path, "/");
-                    strcat(real_path, executable_path);
-                    strcat(real_path, "\0");
-                    t[0] = real_path;
-                    execv(t[0], t);
-                    memset(real_path, 0, sizeof(char) * 1024);
-                }
-
-                exit(EXIT_SUCCESS);
-               
+                redirect_io(t);
+                find_program_path(t);
+                execv(t[0], t);
             } else {
                 int status;
                 waitpid(child_pid, &status, 0);
@@ -201,3 +169,44 @@ int shell(int argc, char *argv[]) {
 
     return 0;
 }
+
+void redirect_io(tok_t *tokens) {
+    int in_index = isDirectTok(tokens, REDIRECT_IN);
+    if (in_index > 0) {
+        int in_file_desc = open(tokens[in_index + 1], O_RDONLY);
+        dup2(in_file_desc, STDIN_FILENO);
+        tokens[in_index] = tokens[in_index + 1] = NULL;
+    }
+    int out_index = isDirectTok(tokens, REDIRECT_OUT);
+    if (out_index > 0) {
+        int file_desc = open(tokens[out_index + 1], O_CREAT | O_WRONLY | O_TRUNC, S_IRWXU);
+        dup2(file_desc, STDOUT_FILENO);
+        tokens[out_index] = tokens[out_index + 1] = NULL;
+    }
+}
+
+void find_program_path(tok_t *tokens) {
+    if (access(tokens[0], F_OK)) {
+        return;
+    }
+    const char *executable_path = tokens[0];
+    char *environment_path = getenv("PATH");
+    tok_t *path_variables = getToks(environment_path);
+    for (int i = 0; i < MAXTOKS - 1 && path_variables[i]; ++i) {
+        char *test_path = create_path(executable_path, path_variables[i]);
+        if (access(test_path, F_OK)) {
+            tokens[0] = test_path;
+            return;
+        }
+    }
+}
+
+char *create_path(const char *executable_path, tok_t path_variable) {
+    char *real_path = (char *) malloc(sizeof(char) * MAXLINE);
+    strcat(real_path, path_variable);
+    strcat(real_path, "/");
+    strcat(real_path, executable_path);
+    strcat(real_path, "\0");
+    return real_path;
+}
+
