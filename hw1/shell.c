@@ -55,6 +55,12 @@ int cmd_cd(tok_t arg[]) {
     return 0;
 }
 
+int cmd_wait(tok_t arg[]) {
+    int status, wpid;
+    while ((wpid = wait(&status)) > 0); 
+    return 1;
+}
+
 
 /* Command Lookup table */
 typedef int cmd_fun_t(tok_t args[]); /* cmd functions take token array and return int */
@@ -68,7 +74,8 @@ fun_desc_t cmd_table[] = {
         {cmd_help, "?",    "show this help menu"},
         {cmd_quit, "quit", "quit the command shell"},
         {cmd_pwd,  "pwd",  "get the current working directory"},
-        {cmd_cd,   "cd",   "change the current directory to provided one"}
+        {cmd_cd,   "cd",   "change the current directory to provided one"},
+        {cmd_wait, "wait", "wait for child processes to finish"}
 };
 
 int cmd_help(tok_t arg[]) {
@@ -149,6 +156,10 @@ int shell(int argc, char *argv[]) {
     while ((s = freadln(stdin))) {
         t = getToks(s); /* break the line into tokens */
         fundex = lookup(t[0]); /* Is first token a shell literal */
+        int back_index = isDirectTok(t, "&");
+        if (back_index > 0)
+            t[back_index] = NULL;
+
         if (fundex >= 0)
             cmd_table[fundex].fun(&t[1]);
         else {
@@ -160,10 +171,13 @@ int shell(int argc, char *argv[]) {
                 find_program_path(t);
                 execv(t[0], t);
             } else {
-                int status;
-                waitpid(child_pid, &status, 0);
+                if (back_index == 0) {
+                    int status;
+                    waitpid(child_pid, &status, 0);
+                }
             }
         }
+        // fprintf(stdout, "%d: ", lineNum);
     }
 
     return 0;
