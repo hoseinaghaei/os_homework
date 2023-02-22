@@ -8,6 +8,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <fcntl.h>
+#include <stdbool.h>
 
 
 #define FALSE 0
@@ -35,6 +36,8 @@ void find_program_path(tok_t *pString);
 
 void redirect_io(tok_t *tokens);
 
+bool is_space(char *s);
+
 int cmd_pwd(tok_t arg[]) {
     size_t size = sizeof(char) * 256;
     char *path = getcwd(NULL, size);
@@ -57,7 +60,7 @@ int cmd_cd(tok_t arg[]) {
 
 int cmd_wait(tok_t arg[]) {
     int status, wpid;
-    while ((wpid = wait(&status)) > 0); 
+    while ((wpid = wait(&status)) > 0);
     return 1;
 }
 
@@ -94,6 +97,26 @@ int lookup(char cmd[]) {
     return -1;
 }
 
+void deactivate_signals()
+{
+    signal(SIGTSTP, SIG_IGN);
+    signal(SIGINT, SIG_IGN);
+    signal(SIGQUIT, SIG_IGN);
+    signal(SIGTTIN, SIG_IGN);
+    signal(SIGTTOU, SIG_IGN);
+    signal(SIGTTOU, SIG_IGN);
+}
+
+void activate_signals()
+{
+    signal(SIGTSTP, SIG_DFL);
+    signal(SIGINT, SIG_DFL);
+    signal(SIGQUIT, SIG_DFL);
+    signal(SIGTTIN, SIG_DFL);
+    signal(SIGTTOU, SIG_DFL);
+    signal(SIGTTOU, SIG_DFL);
+}
+
 void init_shell() {
     /* Check if we are running interactively */
     shell_terminal = STDIN_FILENO;
@@ -118,8 +141,8 @@ void init_shell() {
         /* Take control of the terminal */
         tcsetpgrp(shell_terminal, shell_pgid);
         tcgetattr(shell_terminal, &shell_tmodes);
+        //deactivate_signals();
     }
-    /** YOUR CODE HERE */
 }
 
 /**
@@ -147,13 +170,17 @@ int shell(int argc, char *argv[]) {
     pid_t ppid = getppid();    /* get parents PID */
     pid_t cpid, tcpid, cpgid;
 
+
     init_shell();
 
-    // printf("%s running as PID %d under %d\n",argv[0],pid,ppid);
+//     printf("%s running as PID %d under %d\n",argv[0],pid,getgid());
 
     lineNum = 0;
     // fprintf(stdout, "%d: ", lineNum);
     while ((s = freadln(stdin))) {
+        if (is_space(s)) {
+            continue;
+        }
         t = getToks(s); /* break the line into tokens */
         fundex = lookup(t[0]); /* Is first token a shell literal */
         int back_index = isDirectTok(t, "&");
@@ -167,20 +194,60 @@ int shell(int argc, char *argv[]) {
             if (child_pid < 0) {
                 continue;
             } else if (child_pid == 0) {
+//                printf("child1 : %d %d\n", getpid(), getgid());
+//                if (setpgrp() == 0) {
+//                    printf("Success change gid \n\n");
+//                    printf("child2 : %d %d\n", getpid(), getgid());
+//                }
+                if (back_index == 0) {
+                    activate_signals();
+                }
+//                printf("child : %d %d\n", getpid(), getgid());
                 redirect_io(t);
                 find_program_path(t);
+                // exit(0);
                 execv(t[0], t);
+                exit(0);
             } else {
                 if (back_index == 0) {
+                    deactivate_signals();
                     int status;
-                    waitpid(child_pid, &status, 0);
+                    setpgid(child_pid,child_pid);
+//               printf("child : %d %d\n", getpgid(child_pid), child_pid);
+                    //printf(" ");
+                    tcsetpgrp(STDIN_FILENO, child_pid);
+                    waitpid(child_pid, &status, WUNTRACED);
+
+                    tcsetpgrp(STDIN_FILENO, shell_pgid);
+                    //printf(" ");
+                    activate_signals();
                 }
+
+//                tcsetpgrp(shell_terminal, child_pid);
+//                printf("parent : %d %d\n\n", getpid(), getgid());
+//
+//                if (back_index == 0) {
+//                    deactivate_signals();
+//                    waitpid(child_pid, &status, WUNTRACED | WNOHANG);
+//
+//                    activate_signals();
+//                    tcsetpgrp(shell_terminal, shell_pgid);
+////                    tcsetpgrp(STDOUT_FILENO, ppid);
+//                }
             }
         }
-        // fprintf(stdout, "%d: ", lineNum);
     }
 
     return 0;
+}
+
+bool is_space(char *s) {
+    for (int i = 0; i < strlen(s); ++i) {
+        if (!isspace(s[i])) {
+            return FALSE;
+        }
+    }
+    return TRUE;
 }
 
 void redirect_io(tok_t *tokens) {
