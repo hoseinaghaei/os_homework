@@ -194,18 +194,11 @@ int shell(int argc, char *argv[]) {
             if (child_pid < 0) {
                 continue;
             } else if (child_pid == 0) {
-//                printf("child1 : %d %d\n", getpid(), getgid());
-//                if (setpgrp() == 0) {
-//                    printf("Success change gid \n\n");
-//                    printf("child2 : %d %d\n", getpid(), getgid());
-//                }
                 if (back_index == 0) {
                     activate_signals();
                 }
-//                printf("child : %d %d\n", getpid(), getgid());
                 redirect_io(t);
                 find_program_path(t);
-                // exit(0);
                 execv(t[0], t);
                 exit(0);
             } else {
@@ -213,27 +206,12 @@ int shell(int argc, char *argv[]) {
                     deactivate_signals();
                     int status;
                     setpgid(child_pid,child_pid);
-//               printf("child : %d %d\n", getpgid(child_pid), child_pid);
-                    //printf(" ");
                     tcsetpgrp(STDIN_FILENO, child_pid);
                     waitpid(child_pid, &status, WUNTRACED);
 
                     tcsetpgrp(STDIN_FILENO, shell_pgid);
-                    //printf(" ");
                     activate_signals();
                 }
-
-//                tcsetpgrp(shell_terminal, child_pid);
-//                printf("parent : %d %d\n\n", getpid(), getgid());
-//
-//                if (back_index == 0) {
-//                    deactivate_signals();
-//                    waitpid(child_pid, &status, WUNTRACED | WNOHANG);
-//
-//                    activate_signals();
-//                    tcsetpgrp(shell_terminal, shell_pgid);
-////                    tcsetpgrp(STDOUT_FILENO, ppid);
-//                }
             }
         }
     }
