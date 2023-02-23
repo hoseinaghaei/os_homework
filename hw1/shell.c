@@ -16,6 +16,7 @@
 #define INPUT_STRING_SIZE 80
 #define REDIRECT_IN "<"
 #define REDIRECT_OUT ">"
+#define BACKGROUND "&"
 
 #include "io.h"
 #include "parse.h"
@@ -32,11 +33,15 @@ int cmd_help(tok_t arg[]);
 
 char *create_path(const char *executable_path, tok_t path_variable);
 
-void find_program_path(tok_t *pString);
+void make_program_path(tok_t *tokens);
 
 void redirect_io(tok_t *tokens);
 
 bool is_space(char *s);
+
+int handle_background_index(tok_t *t);
+
+void put_parent_process_in_background(pid_t child_pid);
 
 int cmd_pwd(tok_t arg[]) {
     size_t size = sizeof(char) * 256;
@@ -141,7 +146,7 @@ void init_shell() {
         /* Take control of the terminal */
         tcsetpgrp(shell_terminal, shell_pgid);
         tcgetattr(shell_terminal, &shell_tmodes);
-        //deactivate_signals();
+        deactivate_signals();
     }
 }
 
@@ -162,34 +167,23 @@ process *create_process(char *inputString) {
 
 
 int shell(int argc, char *argv[]) {
-    char *s = malloc(INPUT_STRING_SIZE + 1);            /* user input string */
-    tok_t *t;            /* tokens parsed from input */
-    int lineNum = 0;
+    char *s = malloc(INPUT_STRING_SIZE + 1); 
+    tok_t *t;           
     int fundex = -1;
-    pid_t pid = getpid();        /* get current processes PID */
-    pid_t ppid = getppid();    /* get parents PID */
-    pid_t cpid, tcpid, cpgid;
 
 
     init_shell();
-
-//     printf("%s running as PID %d under %d\n",argv[0],pid,getgid());
-
-    lineNum = 0;
-    // fprintf(stdout, "%d: ", lineNum);
+    
     while ((s = freadln(stdin))) {
         if (is_space(s)) {
             continue;
         }
-        t = getToks(s); /* break the line into tokens */
-        fundex = lookup(t[0]); /* Is first token a shell literal */
-        int back_index = isDirectTok(t, "&");
-        if (back_index > 0)
-            t[back_index] = NULL;
-
+        t = getToks(s); 
+        fundex = lookup(t[0]);
         if (fundex >= 0)
             cmd_table[fundex].fun(&t[1]);
         else {
+            int back_index = handle_background_index(t);
             pid_t child_pid = fork();
             if (child_pid < 0) {
                 continue;
@@ -198,24 +192,34 @@ int shell(int argc, char *argv[]) {
                     activate_signals();
                 }
                 redirect_io(t);
-                find_program_path(t);
+                make_program_path(t);
                 execv(t[0], t);
                 exit(0);
             } else {
                 if (back_index == 0) {
-                    deactivate_signals();
-                    int status;
-                    setpgid(child_pid,child_pid);
-                    tcsetpgrp(STDIN_FILENO, child_pid);
-                    waitpid(child_pid, &status, WUNTRACED);
-
-                    tcsetpgrp(STDIN_FILENO, shell_pgid);
+                    put_parent_process_in_background(child_pid);
                 }
             }
         }
     }
 
     return 0;
+}
+
+void put_parent_process_in_background(pid_t child_pid) {
+    deactivate_signals();
+    setpgid(child_pid,child_pid);
+    tcsetpgrp(STDIN_FILENO, child_pid);
+    int status;
+    waitpid(child_pid, &status, WUNTRACED);
+    tcsetpgrp(STDIN_FILENO, shell_pgid);
+}
+
+int handle_background_index(tok_t *t) {
+    int back_index = isDirectTok(t, BACKGROUND);
+    if (back_index > 0)
+        t[back_index] = NULL;
+    return back_index;
 }
 
 bool is_space(char *s) {
@@ -242,7 +246,7 @@ void redirect_io(tok_t *tokens) {
     }
 }
 
-void find_program_path(tok_t *tokens) {
+void make_program_path(tok_t *tokens) {
     if (access(tokens[0], F_OK) == 0) {
         return;
     }
