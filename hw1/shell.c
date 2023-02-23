@@ -210,7 +210,6 @@ int shell(int argc, char *argv[]) {
                     waitpid(child_pid, &status, WUNTRACED);
 
                     tcsetpgrp(STDIN_FILENO, shell_pgid);
-                    activate_signals();
                 }
             }
         }
