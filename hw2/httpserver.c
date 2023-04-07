@@ -31,13 +31,17 @@ char *server_files_directory;
 char *server_proxy_hostname;
 int server_proxy_port;
 
+
+char *long_to_string(unsigned long number) {
+    char *int_str = malloc(sizeof(char) * 32);
+    sprintf(int_str, "%ld", number);
+    return int_str;
+}
+
 char *get_file_size(char *path) {
     struct stat s;
     stat(path, &s);
-    return (char *)s.st_size;
-    char *int_str = malloc(sizeof(char) * 32);
-    sprintf(int_str, "%ld", s.st_size);
-    return int_str;
+    return long_to_string(s.st_size);
 }
 
 
@@ -109,7 +113,7 @@ void serve_directory(int fd, char *path) {
 
     http_start_response(fd, 200);
     http_send_header(fd, "Content-Type", http_get_mime_type(".html"));
-    http_send_header(fd, "Content-Length", (char *) strlen(content));
+    http_send_header(fd, "Content-Length", long_to_string(strlen(content)));
     http_end_headers(fd);
     http_send_string(fd, content);
 
