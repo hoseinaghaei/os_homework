@@ -31,6 +31,15 @@ char *server_files_directory;
 char *server_proxy_hostname;
 int server_proxy_port;
 
+char *get_file_size(char *path) {
+    struct stat s;
+    stat(path, &s);
+    char *int_str = malloc(sizeof(char) * 32);
+    sprintf(int_str, "%ld", s.st_size);
+    return int_str;
+}
+
+
 /*
  * Serves the contents the file stored at `path` to the client socket `fd`.
  * It is the caller's reponsibility to ensure that the file stored at `path` exists.
