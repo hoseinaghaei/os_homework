@@ -51,28 +51,29 @@ char *get_file_size(char *path) {
 void serve_file(int fd, char *path) {
 
     http_start_response(fd, 200);
-    http_send_header(fd, "Content-Type", http_get_mime_type(path));
-    FILE *ptr;
-    char ch;
-    ptr = fopen(path, "r");
-//    if (NULL == ptr) {
-//        printf("file can't be opened \n");
-//    }
-    char *data = malloc(sizeof(char) * 4096);
-    int len = 0;
-    while (!feof(ptr)) {
-        ch = (char)fgetc(ptr);
-        data[len] = ch;
-        len ++;
-    }
-    close(ptr);
-    data[len] = '\0';
-    char int_str[20];
-    sprintf(int_str, "%d", len);
-    http_send_header(fd, "Content-Length", int_str); // Change this too
+    char *mime_type = http_get_mime_type(path);
+    http_send_header(fd, "Content-Type", mime_type);
+    char *content_size = get_file_size(path);
+    http_send_header(fd, "Content-Length", content_size);
     http_end_headers(fd);
-    http_send_string(fd, data);
+
+    FILE *ptr;
+    size_t content_length = atoi(content_size);
+    char *content = malloc(sizeof(char) * content_length);
+    if (strncpy(mime_type, "text", 4) == 0) { // text file
+        ptr = fopen(path, "r");
+        fread(content, sizeof(char), content_length, ptr);
+        http_send_string(fd, content);
+    } else { // binary file
+        ptr = fopen(path, "rb");
+        size_t n;
+        while ((n = fread(content, sizeof(char), content_length, ptr)) > 0) {
+            http_send_data(fd, content, n);
+        }
+    }
     close(fd);
+    free(content_size);
+    free(content);
     /* TODO: PART 1 Bullet 2 */
 }
 
