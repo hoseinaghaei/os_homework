@@ -72,12 +72,24 @@ void serve_file(int fd, char *path) {
         }
     }
     close(fd);
+    fclose(ptr);
     free(content_size);
     free(content);
     /* TODO: PART 1 Bullet 2 */
 }
 
 void serve_directory(int fd, char *path) {
+    char *index_html = "/index.html";
+    char *index_html_path = malloc(sizeof(char) * (strlen(path) + strlen(index_html)));
+    strcpy(index_html_path, path);
+    strcat(index_html_path, index_html);
+    struct stat s;
+    int error = stat(index_html_path, &s);
+    if (!error && S_ISREG(s.st_mode)) {
+        serve_file(fd, index_html_path);
+        free(index_html_path);
+        return;
+    }
     http_start_response(fd, 200);
     http_send_header(fd, "Content-Type", http_get_mime_type(".html"));
     http_end_headers(fd);
@@ -130,11 +142,15 @@ void handle_files_request(int fd) {
      * TODO: First is to serve files. If the file given by `path` exists,
      * call serve_file() on it. Else, serve a 404 Not Found error below.
      */
-//    chdir(server_files_directory);
+    chdir(server_files_directory);
     struct stat path_stat;
     stat(path, &path_stat);
     if (S_ISREG(path_stat.st_mode)) {
         serve_file(fd, path);
+        return;
+    } else if (S_ISDIR(path_stat.st_mode)) {
+        serve_directory(fd, path);
+        return;
     } else {
         http_start_response(fd, 404);
         http_send_header(fd, "Content-Type", "text/html");
