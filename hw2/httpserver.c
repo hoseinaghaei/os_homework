@@ -49,18 +49,18 @@ char *get_file_size(char *path) {
  *            sesnsitive to time-out errors.
  */
 void serve_file(int fd, char *path) {
+    char *mime_type = http_get_mime_type(path);
+    char *content_size = get_file_size(path);
 
     http_start_response(fd, 200);
-    char *mime_type = http_get_mime_type(path);
     http_send_header(fd, "Content-Type", mime_type);
-    char *content_size = get_file_size(path);
     http_send_header(fd, "Content-Length", content_size);
     http_end_headers(fd);
 
     FILE *ptr;
     size_t content_length = atoi(content_size);
     char *content = malloc(sizeof(char) * content_length);
-    if (strncpy(mime_type, "text", 4) == 0) { // text file
+    if (strncmp(mime_type, "text", 4) == 0) { // text file
         ptr = fopen(path, "r");
         fread(content, sizeof(char), content_length, ptr);
         http_send_string(fd, content);
