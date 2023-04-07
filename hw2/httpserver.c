@@ -219,16 +219,15 @@ void proxy(info thread_info) {
     size_t n;
 
     struct stat s;
-    while (fstat(thread_info.src_fd, &s) != -1 && *thread_info.is_connection_open) {
+    while (*thread_info.is_connection_open) {
         while ((n = read(thread_info.src_fd, buf, LIBHTTP_REQUEST_MAX_SIZE)) > 0) {
             http_send_data(thread_info.dst_fd, buf, n);
         }
-    }
-
-    pthread_mutex_lock(thread_info.mutex);
-    *thread_info.is_connection_open = 0;
+        pthread_mutex_lock(thread_info.mutex);
+        *thread_info.is_connection_open = 0;
 //    pthread_cond_signal(thread_info.cond);
-    pthread_mutex_unlock(thread_info.mutex);
+        pthread_mutex_unlock(thread_info.mutex);
+    }
 }
 
 void *handle_proxy(void *arg) {
@@ -311,6 +310,9 @@ void handle_proxy_request(int fd) {
     pthread_cancel(client_to_server_thread);
     pthread_mutex_destroy(&mutex);
     pthread_cond_destroy(&cond);
+
+    close(fd);
+    close(target_fd);
 }
 
 
