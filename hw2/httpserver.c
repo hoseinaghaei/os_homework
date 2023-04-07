@@ -15,7 +15,7 @@
 #include <unistd.h>
 #include <unistd.h>
 
-#include "libhttp.h"
+#include "libhttp.c"
 #include "wq.h"
 
 /*
@@ -205,6 +205,36 @@ void handle_files_request(int fd) {
     return;
 }
 
+typedef struct info {
+    int src_fd;
+    int dst_fd;
+    int *is_connection_open;
+    pthread_cond_t *cond;
+    pthread_mutex_t *mutex;
+} info;
+
+
+void proxy(info thread_info) {
+    char buf[LIBHTTP_REQUEST_MAX_SIZE];
+    size_t n;
+
+    struct stat s;
+    while (fstat(thread_info.src_fd, &s) != -1 && *thread_info.is_connection_open) {
+        while ((n = read(thread_info.src_fd, buf, LIBHTTP_REQUEST_MAX_SIZE)) > 0) {
+            http_send_data(thread_info.dst_fd, buf, n);
+        }
+    }
+
+    pthread_mutex_lock(thread_info.mutex);
+    *thread_info.is_connection_open = 0;
+//    pthread_cond_signal(thread_info.cond);
+    pthread_mutex_unlock(thread_info.mutex);
+}
+
+void *handle_proxy(void *arg) {
+    info thread_info = *(info *) arg;
+    proxy(thread_info);
+}
 
 /*
  * Opens a connection to the proxy target (hostname=server_proxy_hostname and
@@ -265,9 +295,22 @@ void handle_proxy_request(int fd) {
 
     }
 
-    /*
-    * TODO: Your solution for task 3 belongs here!
-    */
+    int is_connection_open = 1;
+    pthread_mutex_t mutex;
+    pthread_cond_t cond;
+    pthread_mutex_init(&mutex, NULL);
+    pthread_cond_init(&cond, NULL);
+
+    info client_to_server_info = {fd, target_fd, &is_connection_open, &cond, &mutex};
+    pthread_t client_to_server_thread;
+    pthread_create(&client_to_server_thread, NULL, handle_proxy, &client_to_server_info);
+
+    info server_to_client_info = {target_fd, fd, &is_connection_open, &cond, &mutex};
+    proxy(server_to_client_info);
+
+    pthread_cancel(client_to_server_thread);
+    pthread_mutex_destroy(&mutex);
+    pthread_cond_destroy(&cond);
 }
 
 
