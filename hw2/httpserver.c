@@ -71,13 +71,16 @@ void serve_file(int fd, char *path) {
         http_send_string(fd, content);
     } else { // binary file
         ptr = fopen(path, "rb");
-        fread(content, sizeof(char), content_length, ptr);
-        http_send_data(fd, content, content_length);
+        size_t n;
+        while ((n = fread(content, sizeof(char), content_length, ptr)) > 0) {
+            http_send_data(fd, content, n);
+        }
     }
+    close(fd);
     fclose(ptr);
     free(content_size);
     free(content);
-    free(mime_type);
+    /* TODO: PART 1 Bullet 2 */
 }
 
 char *link_to_dir_contents(char *path) {
@@ -106,7 +109,6 @@ void serve_directory(int fd, char *path) {
         free(index_html_path);
         return;
     }
-
     char *content = link_to_dir_contents(path);
 
     http_start_response(fd, 200);
@@ -115,7 +117,10 @@ void serve_directory(int fd, char *path) {
     http_end_headers(fd);
     http_send_string(fd, content);
 
+    close(fd);
     free(content);
+    /* TODO: PART 1 Bullet 3,4 */
+
 }
 
 
@@ -158,20 +163,46 @@ void handle_files_request(int fd) {
     path[1] = '/';
     memcpy(path + 2, request->path, strlen(request->path) + 1);
 
+    /*
+     * TODO: First is to serve files. If the file given by `path` exists,
+     * call serve_file() on it. Else, serve a 404 Not Found error below.
+     */
     chdir(server_files_directory);
     struct stat path_stat;
-    int error = stat(path, &path_stat);
-    if (!error && S_ISREG(path_stat.st_mode))
+    stat(path, &path_stat);
+    if (S_ISREG(path_stat.st_mode)) {
         serve_file(fd, path);
-    else if (!error && S_ISDIR(path_stat.st_mode))
+        return;
+    } else if (S_ISDIR(path_stat.st_mode)) {
         serve_directory(fd, path);
-    else {
+        return;
+    } else {
         http_start_response(fd, 404);
         http_send_header(fd, "Content-Type", "text/html");
         http_end_headers(fd);
+        close(fd);
+        return;
     }
+    /*
+     * TODO: Second is to serve both files and directories. You will need to
+     * determine when to call serve_file() or serve_directory() depending
+     * on `path`.
+     *
+     * Feel FREE to delete/modify anything on this function.
+     */
+
+    http_start_response(fd, 200);
+    http_send_header(fd, "Content-Type", "text/html");
+    http_end_headers(fd);
+    http_send_string(fd,
+                     "<center>"
+                     "<h1>Welcome to httpserver!</h1>"
+                     "<hr>"
+                     "<p>Nothing's here yet.</p>"
+                     "</center>");
 
     close(fd);
+    return;
 }
 
 
