@@ -130,7 +130,7 @@ void handle_files_request(int fd) {
      * TODO: First is to serve files. If the file given by `path` exists,
      * call serve_file() on it. Else, serve a 404 Not Found error below.
      */
-    chdir(server_files_directory);
+//    chdir(server_files_directory);
     struct stat path_stat;
     stat(path, &path_stat);
     if (S_ISREG(path_stat.st_mode)) {
