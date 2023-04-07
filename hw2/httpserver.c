@@ -74,7 +74,6 @@ void serve_file(int fd, char *path) {
         fread(content, sizeof(char), content_length, ptr);
         http_send_data(fd, content, content_length);
     }
-    close(fd);
     fclose(ptr);
     free(content_size);
     free(content);
@@ -117,7 +116,6 @@ void serve_directory(int fd, char *path) {
     http_send_string(fd, content);
 
     free(content);
-    close(fd);
 }
 
 
@@ -171,8 +169,9 @@ void handle_files_request(int fd) {
         http_start_response(fd, 404);
         http_send_header(fd, "Content-Type", "text/html");
         http_end_headers(fd);
-        close(fd);
     }
+
+    close(fd);
 }
 
 
@@ -234,7 +233,7 @@ void handle_proxy_request(int fd) {
         return;
 
     }
-    pthread_cond_t
+
     /*
     * TODO: Your solution for task 3 belongs here!
     */
