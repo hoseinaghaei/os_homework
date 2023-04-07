@@ -34,6 +34,7 @@ int server_proxy_port;
 char *get_file_size(char *path) {
     struct stat s;
     stat(path, &s);
+    return (char *)s.st_size;
     char *int_str = malloc(sizeof(char) * 32);
     sprintf(int_str, "%ld", s.st_size);
     return int_str;
@@ -78,22 +79,42 @@ void serve_file(int fd, char *path) {
     /* TODO: PART 1 Bullet 2 */
 }
 
+char *link_to_dir_contents(char *path) {
+    char *content = malloc(sizeof(char) * 1 << 20);
+    strcpy(content, "<a href=\"../\">Parent directory</a>");
+    DIR *dir = opendir(path);
+    struct dirent *child;
+    while ((child = readdir(dir)) != NULL) {
+        char link[1024];
+        sprintf(link, "<br>\n<a href=%s>%s</a>", child->d_name, child->d_name);
+        strcat(content, link);
+    }
+    closedir(dir);
+    return content;
+}
+
 void serve_directory(int fd, char *path) {
     char *index_html = "/index.html";
     char *index_html_path = malloc(sizeof(char) * (strlen(path) + strlen(index_html)));
     strcpy(index_html_path, path);
     strcat(index_html_path, index_html);
     struct stat s;
-    int error = stat(index_html_path, &s);
-    if (!error && S_ISREG(s.st_mode)) {
+    stat(index_html_path, &s);
+    if (S_ISREG(s.st_mode)) {
         serve_file(fd, index_html_path);
         free(index_html_path);
         return;
     }
+    char *content = link_to_dir_contents(path);
+
     http_start_response(fd, 200);
     http_send_header(fd, "Content-Type", http_get_mime_type(".html"));
+    http_send_header(fd, "Content-Length", (char *) strlen(content));
     http_end_headers(fd);
+    http_send_string(fd, content);
 
+    close(fd);
+    free(content);
     /* TODO: PART 1 Bullet 3,4 */
 
 }
