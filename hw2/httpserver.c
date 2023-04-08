@@ -218,16 +218,13 @@ void proxy(info thread_info) {
     char buf[LIBHTTP_REQUEST_MAX_SIZE];
     size_t n;
 
-    struct stat s;
-    while (*thread_info.is_connection_open) {
-        while ((n = read(thread_info.src_fd, buf, LIBHTTP_REQUEST_MAX_SIZE)) > 0) {
-            http_send_data(thread_info.dst_fd, buf, n);
-        }
-        pthread_mutex_lock(thread_info.mutex);
-        *thread_info.is_connection_open = 0;
-//    pthread_cond_signal(thread_info.cond);
-        pthread_mutex_unlock(thread_info.mutex);
+    while (*thread_info.is_connection_open && (n = read(thread_info.src_fd, buf, LIBHTTP_REQUEST_MAX_SIZE)) > 0) {
+        http_send_data(thread_info.dst_fd, buf, n);
     }
+    pthread_mutex_lock(thread_info.mutex);
+    *thread_info.is_connection_open = 0;
+//    pthread_cond_signal(thread_info.cond);
+    pthread_mutex_unlock(thread_info.mutex);
 }
 
 void *handle_proxy(void *arg) {
