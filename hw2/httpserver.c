@@ -34,14 +34,12 @@ void send_http_response(int fd,
                         int status_code,
                         char *content_type,
                         char *content_length,
-                        char *content,
-                        int send_or_not) {
+                        char *content) {
     http_start_response(fd, status_code);
     http_send_header(fd, "Content-Type", content_type);
     http_send_header(fd, "Content-Length", content_length);
     http_end_headers(fd);
-    if (send_or_not)
-        http_send_string(fd, content);
+    http_send_string(fd, content);
 }
 
 
@@ -81,8 +79,9 @@ void serve_file(int fd, char *path) {
     if (strncmp(mime_type, "text", 4) == 0) { // text file
         ptr = fopen(path, "r");
         fread(content, sizeof(char), content_length, ptr);
-        http_send_string(fd, content);
+        send_http_response(fd, 200, mime_type, content_size, content);
     } else { // binary file
+        send_http_response(fd, 200, mime_type, content_size, "");
         ptr = fopen(path, "rb");
         size_t n;
         while ((n = fread(content, sizeof(char), content_length, ptr)) > 0) {
@@ -126,8 +125,8 @@ void serve_directory(int fd, char *path) {
                        200,
                        http_get_mime_type(".html"),
                        long_to_string(strlen(content)),
-                       content,
-                       1);
+                       content
+    );
 
     free(content);
     free(index_html_path);
@@ -181,7 +180,7 @@ void handle_files_request(int fd) {
         serve_directory(fd, path);
         return;
     } else {
-        send_http_response(fd, 404, "text/html", "", "", 0);
+        send_http_response(fd, 404, "text/html", "", "", 1);
         return;
     }
 }
