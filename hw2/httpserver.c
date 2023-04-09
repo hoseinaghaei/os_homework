@@ -181,7 +181,7 @@ void handle_files_request(int fd) {
 typedef struct info {
     int src_fd;
     int dst_fd;
-    int is_alive;
+    int *is_alive;
     pthread_cond_t *cond;
 } info;
 
@@ -189,12 +189,12 @@ void *proxy(info * thread_info) {
     char *buf = malloc(1024);
     size_t n;
 
-    while ((n = read(thread_info->src_fd, buf, 1024)) > 0) {
+    while (thread_info->is_alive && (n = read(thread_info->src_fd, buf, 1024)) > 0) {
         http_send_data(thread_info->dst_fd, buf, n);
     }
     free(buf);
 
-    thread_info->is_alive = 0;
+    *thread_info->is_alive = 0;
     pthread_cond_broadcast(thread_info->cond);
     return NULL;
 }
@@ -263,33 +263,35 @@ void handle_proxy_request(int fd) {
 
     }
 
+    int is_alive = 1;
     pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
     pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
 
     info *client_to_server_info = malloc(sizeof(info));
     client_to_server_info->src_fd = fd;
     client_to_server_info->dst_fd = target_fd;
-    client_to_server_info->is_alive = 1;
+    client_to_server_info->is_alive = &is_alive;
     client_to_server_info->cond = &cond;
 
     info *server_to_client_info = malloc(sizeof(info));
     server_to_client_info->src_fd = target_fd;
     server_to_client_info->dst_fd = fd;
-    server_to_client_info->is_alive = 1;
+    server_to_client_info->is_alive = &is_alive;
     server_to_client_info->cond = &cond;
 
     pthread_t client_to_server_thread;
-    pthread_t server_to_client_thread;
+//    pthread_t server_to_client_thread;
 
     pthread_create(&client_to_server_thread, NULL, handle_proxy, client_to_server_info);
-    pthread_create(&server_to_client_thread, NULL, handle_proxy, server_to_client_info);
+//    pthread_create(&server_to_client_thread, NULL, handle_proxy, server_to_client_info);
 
-    while (client_to_server_info->is_alive && server_to_client_info->is_alive) {
-        pthread_cond_wait(&cond, &mutex);
-    }
+//    while (client_to_server_info->is_alive && server_to_client_info->is_alive) {
+//        pthread_cond_wait(&cond, &mutex);
+//    }
+    proxy(server_to_client_info);
 
     pthread_cancel(client_to_server_thread);
-    pthread_cancel(server_to_client_thread);
+//    pthread_cancel(server_to_client_thread);
     pthread_mutex_destroy(&mutex);
     pthread_cond_destroy(&cond);
 
