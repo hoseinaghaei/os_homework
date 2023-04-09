@@ -1,7 +1,6 @@
 #include <arpa/inet.h>
 #include <dirent.h>
 #include <errno.h>
-#include <fcntl.h>
 #include <netdb.h>
 #include <netinet/in.h>
 #include <pthread.h>
@@ -13,9 +12,8 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
-#include <unistd.h>
 
-#include "libhttp.c"
+#include "libhttp.h"
 #include "wq.h"
 
 /*
@@ -189,12 +187,14 @@ typedef struct info {
 
 void *handle_proxy(void *arg) {
     info *thread_info = (info *) arg;
-    char buf[LIBHTTP_REQUEST_MAX_SIZE];
+    char *buf = malloc(1024);
     size_t n;
 
-    while (thread_info->is_alive && (n = read(thread_info->src_fd, buf, LIBHTTP_REQUEST_MAX_SIZE)) > 0) {
+    while ((n = read(thread_info->src_fd, buf, 1024)) > 0) {
         http_send_data(thread_info->dst_fd, buf, n);
     }
+    free(buf);
+
     thread_info->is_alive = 0;
     pthread_cond_broadcast(thread_info->cond);
     return NULL;
@@ -288,6 +288,9 @@ void handle_proxy_request(int fd) {
     pthread_cancel(server_to_client_thread);
     pthread_mutex_destroy(&mutex);
     pthread_cond_destroy(&cond);
+
+    free(server_to_client_info);
+    free(client_to_server_info);
 
     close(target_fd);
 }
