@@ -115,6 +115,7 @@ void serve_directory(int fd, char *path) {
     http_send_string(fd, content);
 
     free(content);
+    free(index_html_path);
 }
 
 
@@ -282,6 +283,7 @@ void *serve_request(void *arg) {
     void (*request_handler)(int) = arg;
     while (1) {
         int fd = wq_pop(&work_queue);
+        printf("\nthread %lu serving fd %d\n", pthread_self(), fd);
         request_handler(fd);
         close(fd);
     }
