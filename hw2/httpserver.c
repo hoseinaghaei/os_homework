@@ -183,7 +183,7 @@ void handle_files_request(int fd) {
 typedef struct info {
     int src_fd;
     int dst_fd;
-    int *is_connection_open;
+    int *is_alive;
     pthread_cond_t *cond;
 } info;
 
@@ -192,10 +192,10 @@ void *handle_proxy(void *arg) {
     char buf[LIBHTTP_REQUEST_MAX_SIZE];
     size_t n;
 
-    while (*thread_info.is_connection_open && (n = read(thread_info.src_fd, buf, LIBHTTP_REQUEST_MAX_SIZE)) > 0) {
+    while (thread_info.is_alive && (n = read(thread_info.src_fd, buf, LIBHTTP_REQUEST_MAX_SIZE)) > 0) {
         http_send_data(thread_info.dst_fd, buf, n);
     }
-    *thread_info.is_connection_open = 0;
+    thread_info.is_alive = 0;
     pthread_cond_broadcast(thread_info.cond);
     return NULL;
 }
@@ -258,19 +258,19 @@ void handle_proxy_request(int fd) {
 
     }
 
-    int is_connection_open = 1;
+    int is_alive = 1;
     pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
     pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
 
-    info client_to_server_info = {fd, target_fd, &is_connection_open, &cond};
-    info server_to_client_info = {target_fd, fd, &is_connection_open, &cond};
+    info client_to_server_info = {fd, target_fd, &is_alive, &cond};
+    info server_to_client_info = {target_fd, fd, &is_alive, &cond};
     pthread_t client_to_server_thread;
     pthread_t server_to_client_thread;
 
     pthread_create(&client_to_server_thread, NULL, handle_proxy, &client_to_server_info);
     pthread_create(&server_to_client_thread, NULL, handle_proxy, &server_to_client_info);
 
-    while (is_connection_open) {
+    while (is_alive) {
         pthread_cond_wait(&cond, &mutex);
     }
 
