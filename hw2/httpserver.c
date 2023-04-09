@@ -185,8 +185,7 @@ typedef struct info {
     pthread_cond_t *cond;
 } info;
 
-void *handle_proxy(void *arg) {
-    info *thread_info = (info *) arg;
+void *proxy(info * thread_info) {
     char *buf = malloc(1024);
     size_t n;
 
@@ -197,6 +196,12 @@ void *handle_proxy(void *arg) {
 
     thread_info->is_alive = 0;
     pthread_cond_broadcast(thread_info->cond);
+    return NULL;
+}
+
+void *handle_proxy(void *arg) {
+    info *thread_info = (info *) arg;
+    proxy(thread_info);
     return NULL;
 }
 
@@ -258,7 +263,6 @@ void handle_proxy_request(int fd) {
 
     }
 
-    int is_alive = 1;
     pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
     pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
 
@@ -299,6 +303,7 @@ void *serve_request(void *arg) {
     void (*request_handler)(int) = arg;
     while (1) {
         int fd = wq_pop(&work_queue);
+        printf("\nthread %lu serve %d\n", pthread_self(), fd);
         request_handler(fd);
         close(fd);
     }
@@ -376,8 +381,6 @@ void serve_forever(int *socket_number, void (*request_handler)(int)) {
                client_address.sin_port);
 
         wq_push(&work_queue, client_socket_number);
-//        request_handler(client_socket_number);
-//        close(client_socket_number);
 
         printf("Accepted connection from %s on port %d\n",
                inet_ntoa(client_address.sin_addr),
