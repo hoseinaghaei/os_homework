@@ -177,33 +177,33 @@ typedef struct info {
     int src_fd;
     int dst_fd;
     int *is_alive;
-} info;
+} proxy_thread_info;
 
-void *proxy(info * thread_info) {
-    char *buf = malloc(BUFFER_LENGTH);
+void *proxy(proxy_thread_info * thread_info) {
+    char *buffer = malloc(BUFFER_LENGTH);
     size_t n;
 
-    while (thread_info->is_alive && (n = read(thread_info->src_fd, buf, BUFFER_LENGTH)) > 0) {
-        http_send_data(thread_info->dst_fd, buf, n);
+    while (thread_info->is_alive && (n = read(thread_info->src_fd, buffer, BUFFER_LENGTH)) > 0) {
+        http_send_data(thread_info->dst_fd, buffer, n);
     }
-    free(buf);
+    free(buffer);
     *thread_info->is_alive = 0;
 }
 
 void *client_to_server_proxy(void *arg) {
-    info *thread_info = (info *) arg;
+    proxy_thread_info *thread_info = (proxy_thread_info *) arg;
     proxy(thread_info);
 }
 
 void serve_proxy_request(int client, int server) {
     int is_alive = 1;
 
-    info *client_to_server_info = malloc(sizeof(info));
+    proxy_thread_info *client_to_server_info = malloc(sizeof(proxy_thread_info));
     client_to_server_info->src_fd = client;
     client_to_server_info->dst_fd = server;
     client_to_server_info->is_alive = &is_alive;
 
-    info *server_to_client_info = malloc(sizeof(info));
+    proxy_thread_info *server_to_client_info = malloc(sizeof(proxy_thread_info));
     server_to_client_info->src_fd = server;
     server_to_client_info->dst_fd = client;
     server_to_client_info->is_alive = &is_alive;
