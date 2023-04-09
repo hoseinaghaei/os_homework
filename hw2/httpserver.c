@@ -31,6 +31,14 @@ char *server_files_directory;
 char *server_proxy_hostname;
 int server_proxy_port;
 
+void send_http_response(int fd,
+                        int status_code,
+                        char *content_type,
+                        char *content_length,
+                        char *content) {
+
+}
+
 
 char *long_to_string(unsigned long number) {
     char *int_str = malloc(sizeof(char) * 32);
@@ -57,6 +65,7 @@ void serve_file(int fd, char *path) {
     char *mime_type = http_get_mime_type(path);
     char *content_size = get_file_size(path);
 
+    send_http_response(200, mime_type, content_size, "");
     http_start_response(fd, 200);
     http_send_header(fd, "Content-Type", mime_type);
     http_send_header(fd, "Content-Length", content_size);
@@ -191,11 +200,13 @@ void *proxy(proxy_thread_info *thread_info) {
     }
     free(buffer);
     *thread_info->is_alive = 0;
+    return NULL;
 }
 
 void *client_to_server_proxy(void *arg) {
     proxy_thread_info *client_to_server_info = (proxy_thread_info *) arg;
     proxy(client_to_server_info);
+    return NULL;
 }
 
 void serve_proxy_request(int client, int server) {
