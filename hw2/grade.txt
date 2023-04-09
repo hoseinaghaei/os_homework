@@ -17,7 +17,7 @@
  ;   `.; ;                    : : "+. ; 
 
 
-Date: Fri Apr 07 2023 17:20:30 GMT+0100 (British Summer Time)
+Date: Sun Apr 09 2023 17:42:42 GMT+0100 (British Summer Time)
 httpserver
 	test file integrity ... PASS [1/1]
 	test request metadata ... PASS [1/1]
@@ -29,22 +29,12 @@ httpserver
 	test cutting connection ... PASS [1/1]
 
 httpproxy
-	test file download through proxy ... FAIL [0/1]
-	test large file download through proxy ... FAIL [0/1]
-	test multi-threading (5 threads) ... FAIL [0/1]
-	test multi-threading (10 threads) ... FAIL [0/1]
-	test pass-through proxy ... FAIL [0/1]
+	test file download through proxy ... PASS [1/1]
+	test large file download through proxy ... PASS [1/1]
+	test multi-threading (5 threads) ... PASS [1/1]
+	test multi-threading (10 threads) ... PASS [1/1]
+	test pass-through proxy ... PASS [1/1]
 
 -------------------
-score : 8/13
-:)epoch: 1680884595
-epoch: 1680886499
-epoch: 1680886909
-epoch: 1680979061
-epoch: 1680979501
-epoch: 1681051303
-epoch: 1681053102
-epoch: 1681053443
-epoch: 1681054283
-epoch: 1681054643
-epoch: 1681055043
+score : 13/13
+:)epoch: 1681058583
