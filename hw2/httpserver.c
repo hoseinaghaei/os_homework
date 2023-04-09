@@ -185,22 +185,7 @@ typedef struct info {
     int dst_fd;
     int *is_connection_open;
     pthread_cond_t *cond;
-    pthread_mutex_t *mutex;
 } info;
-
-
-void proxy(info thread_info) {
-    char buf[LIBHTTP_REQUEST_MAX_SIZE];
-    size_t n;
-
-    while (*thread_info.is_connection_open && (n = read(thread_info.src_fd, buf, LIBHTTP_REQUEST_MAX_SIZE)) > 0) {
-        http_send_data(thread_info.dst_fd, buf, n);
-    }
-    pthread_mutex_lock(thread_info.mutex);
-    *thread_info.is_connection_open = 0;
-//    pthread_cond_signal(thread_info.cond);
-    pthread_mutex_unlock(thread_info.mutex);
-}
 
 void *handle_proxy(void *arg) {
     info thread_info = *(info *) arg;
@@ -210,11 +195,9 @@ void *handle_proxy(void *arg) {
     while (*thread_info.is_connection_open && (n = read(thread_info.src_fd, buf, LIBHTTP_REQUEST_MAX_SIZE)) > 0) {
         http_send_data(thread_info.dst_fd, buf, n);
     }
-//    pthread_mutex_lock(thread_info.mutex);
     *thread_info.is_connection_open = 0;
-    pthread_cond_signal(thread_info.cond);
+    pthread_cond_broadcast(thread_info.cond);
     return NULL;
-//    pthread_mutex_unlock(thread_info.mutex);
 }
 
 /*
@@ -276,20 +259,17 @@ void handle_proxy_request(int fd) {
     }
 
     int is_connection_open = 1;
-    pthread_mutex_t mutex;
-    pthread_cond_t cond;
-    pthread_mutex_init(&mutex, NULL);
-    pthread_cond_init(&cond, NULL);
+    pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+    pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
 
-    info client_to_server_info = {fd, target_fd, &is_connection_open, &cond, &mutex};
+    info client_to_server_info = {fd, target_fd, &is_connection_open, &cond};
+    info server_to_client_info = {target_fd, fd, &is_connection_open, &cond};
     pthread_t client_to_server_thread;
-    pthread_create(&client_to_server_thread, NULL, handle_proxy, &client_to_server_info);
-
-    info server_to_client_info = {target_fd, fd, &is_connection_open, &cond, &mutex};
     pthread_t server_to_client_thread;
+
+    pthread_create(&client_to_server_thread, NULL, handle_proxy, &client_to_server_info);
     pthread_create(&server_to_client_thread, NULL, handle_proxy, &server_to_client_info);
 
-//    proxy(server_to_client_info);
     while (is_connection_open) {
         pthread_cond_wait(&cond, &mutex);
     }
@@ -309,7 +289,6 @@ void *serve_request(void *arg) {
         request_handler(fd);
         close(fd);
     }
-    return NULL;
 }
 
 
