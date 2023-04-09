@@ -76,7 +76,6 @@ void serve_file(int fd, char *path) {
             http_send_data(fd, content, n);
         }
     }
-    close(fd);
     fclose(ptr);
     free(content_size);
     free(content);
@@ -117,7 +116,6 @@ void serve_directory(int fd, char *path) {
     http_end_headers(fd);
     http_send_string(fd, content);
 
-    close(fd);
     free(content);
     /* TODO: PART 1 Bullet 3,4 */
 
@@ -145,7 +143,6 @@ void handle_files_request(int fd) {
         http_start_response(fd, 400);
         http_send_header(fd, "Content-Type", "text/html");
         http_end_headers(fd);
-        close(fd);
         return;
     }
 
@@ -153,7 +150,6 @@ void handle_files_request(int fd) {
         http_start_response(fd, 403);
         http_send_header(fd, "Content-Type", "text/html");
         http_end_headers(fd);
-        close(fd);
         return;
     }
 
@@ -180,29 +176,8 @@ void handle_files_request(int fd) {
         http_start_response(fd, 404);
         http_send_header(fd, "Content-Type", "text/html");
         http_end_headers(fd);
-        close(fd);
         return;
     }
-    /*
-     * TODO: Second is to serve both files and directories. You will need to
-     * determine when to call serve_file() or serve_directory() depending
-     * on `path`.
-     *
-     * Feel FREE to delete/modify anything on this function.
-     */
-
-    http_start_response(fd, 200);
-    http_send_header(fd, "Content-Type", "text/html");
-    http_end_headers(fd);
-    http_send_string(fd,
-                     "<center>"
-                     "<h1>Welcome to httpserver!</h1>"
-                     "<hr>"
-                     "<p>Nothing's here yet.</p>"
-                     "</center>");
-
-    close(fd);
-    return;
 }
 
 typedef struct info {
@@ -296,7 +271,6 @@ void handle_proxy_request(int fd) {
         http_end_headers(fd);
         http_send_string(fd, "<center><h1>502 Bad Gateway</h1><hr></center>");
         close(target_fd);
-        close(fd);
         return;
 
     }
