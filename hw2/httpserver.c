@@ -68,11 +68,6 @@ void serve_file(int fd, char *path) {
     char *mime_type = http_get_mime_type(path);
     char *content_size = get_file_size(path);
 
-    http_start_response(fd, 200);
-    http_send_header(fd, "Content-Type", mime_type);
-    http_send_header(fd, "Content-Length", content_size);
-    http_end_headers(fd);
-
     FILE *ptr;
     size_t content_length = atoi(content_size);
     char *content = malloc(sizeof(char) * content_length);
@@ -151,16 +146,12 @@ void handle_files_request(int fd) {
     struct http_request *request = http_request_parse(fd);
 
     if (request == NULL || request->path[0] != '/') {
-        http_start_response(fd, 400);
-        http_send_header(fd, "Content-Type", "text/html");
-        http_end_headers(fd);
+        send_http_response(fd, 400, "text/html", "", "");
         return;
     }
 
     if (strstr(request->path, "..") != NULL) {
-        http_start_response(fd, 403);
-        http_send_header(fd, "Content-Type", "text/html");
-        http_end_headers(fd);
+        send_http_response(fd, 403, "text/html", "", "");
         return;
     }
 
@@ -180,7 +171,7 @@ void handle_files_request(int fd) {
         serve_directory(fd, path);
         return;
     } else {
-        send_http_response(fd, 404, "text/html", "", "", 1);
+        send_http_response(fd, 404, "text/html", "", "");
         return;
     }
 }
