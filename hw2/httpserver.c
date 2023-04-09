@@ -68,13 +68,14 @@ void serve_file(int fd, char *path) {
         ptr = fopen(path, "r");
         fread(content, sizeof(char), content_length, ptr);
         http_send_string(fd, content);
-    } else { // binary file
-        ptr = fopen(path, "rb");
-        size_t n;
-        while ((n = fread(content, sizeof(char), content_length, ptr)) > 0) {
-            http_send_data(fd, content, n);
-        }
     }
+//    } else { // binary file
+//        ptr = fopen(path, "rb");
+//        size_t n;
+//        while ((n = fread(content, sizeof(char), content_length, ptr)) > 0) {
+//            http_send_data(fd, content, n);
+//        }
+//    }
     fclose(ptr);
     free(content_size);
     free(content);
