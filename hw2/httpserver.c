@@ -78,7 +78,6 @@ void serve_file(int fd, char *path) {
     fclose(ptr);
     free(content_size);
     free(content);
-    /* TODO: PART 1 Bullet 2 */
 }
 
 char *link_to_dir_contents(char *path) {
@@ -116,7 +115,7 @@ void serve_directory(int fd, char *path) {
     http_send_string(fd, content);
 
     free(content);
-    /* TODO: PART 1 Bullet 3,4 */
+    free(index_html_path);
 }
 
 
@@ -284,7 +283,6 @@ void *serve_request(void *arg) {
     void (*request_handler)(int) = arg;
     while (1) {
         int fd = wq_pop(&work_queue);
-        printf("\nthread %lu serve %d\n", pthread_self(), fd);
         request_handler(fd);
         close(fd);
     }
