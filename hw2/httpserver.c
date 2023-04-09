@@ -30,6 +30,20 @@ char *server_files_directory;
 char *server_proxy_hostname;
 int server_proxy_port;
 
+void send_http_response(int fd,
+                        int status_code,
+                        char *content_type,
+                        char *content_length,
+                        char *content,
+                        int send_or_not) {
+    http_start_response(fd, status_code);
+    http_send_header(fd, "Content-Type", content_type);
+    http_send_header(fd, "Content-Length", content_length);
+    http_end_headers(fd);
+    if (send_or_not)
+        http_send_string(fd, content);
+}
+
 
 char *long_to_string(unsigned long number) {
     char *int_str = malloc(sizeof(char) * 32);
@@ -108,11 +122,12 @@ void serve_directory(int fd, char *path) {
     }
     char *content = link_to_dir_contents(path);
 
-    http_start_response(fd, 200);
-    http_send_header(fd, "Content-Type", http_get_mime_type(".html"));
-    http_send_header(fd, "Content-Length", long_to_string(strlen(content)));
-    http_end_headers(fd);
-    http_send_string(fd, content);
+    send_http_response(fd,
+                       200,
+                       http_get_mime_type(".html"),
+                       long_to_string(strlen(content)),
+                       content,
+                       1);
 
     free(content);
     free(index_html_path);
@@ -166,9 +181,7 @@ void handle_files_request(int fd) {
         serve_directory(fd, path);
         return;
     } else {
-        http_start_response(fd, 404);
-        http_send_header(fd, "Content-Type", "text/html");
-        http_end_headers(fd);
+        send_http_response(fd, 404, "text/html", "", "", 0);
         return;
     }
 }
@@ -179,7 +192,7 @@ typedef struct info {
     int *is_alive;
 } proxy_thread_info;
 
-void *proxy(proxy_thread_info * thread_info) {
+void *proxy(proxy_thread_info *thread_info) {
     char *buffer = malloc(BUFFER_LENGTH);
     size_t n;
 
