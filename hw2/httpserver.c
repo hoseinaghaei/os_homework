@@ -16,8 +16,6 @@
 #include "libhttp.h"
 #include "wq.h"
 
-#define BUFFER_LENGTH 1024
-
 /*
  * Global configuration variables.
  * You need to use these in your implementation of handle_files_request and
@@ -30,14 +28,6 @@ int server_port;
 char *server_files_directory;
 char *server_proxy_hostname;
 int server_proxy_port;
-
-void send_http_response(int fd,
-                        int status_code,
-                        char *content_type,
-                        char *content_length,
-                        char *content) {
-
-}
 
 
 char *long_to_string(unsigned long number) {
@@ -65,7 +55,6 @@ void serve_file(int fd, char *path) {
     char *mime_type = http_get_mime_type(path);
     char *content_size = get_file_size(path);
 
-    send_http_response(200, mime_type, content_size, "");
     http_start_response(fd, 200);
     http_send_header(fd, "Content-Type", mime_type);
     http_send_header(fd, "Content-Length", content_size);
@@ -126,8 +115,8 @@ void serve_directory(int fd, char *path) {
     http_send_string(fd, content);
 
     free(content);
-    free(index_html_path);
     /* TODO: PART 1 Bullet 3,4 */
+
 }
 
 
@@ -168,6 +157,10 @@ void handle_files_request(int fd) {
     path[1] = '/';
     memcpy(path + 2, request->path, strlen(request->path) + 1);
 
+    /*
+     * TODO: First is to serve files. If the file given by `path` exists,
+     * call serve_file() on it. Else, serve a 404 Not Found error below.
+     */
     chdir(server_files_directory);
     struct stat path_stat;
     stat(path, &path_stat);
@@ -189,46 +182,22 @@ typedef struct info {
     int src_fd;
     int dst_fd;
     int *is_alive;
-} proxy_thread_info;
+} info;
 
-void *proxy(proxy_thread_info *thread_info) {
-    char *buffer = malloc(BUFFER_LENGTH);
+void *proxy(info * thread_info) {
+    char *buf = malloc(1024);
     size_t n;
 
-    while (thread_info->is_alive && (n = read(thread_info->src_fd, buffer, BUFFER_LENGTH)) > 0) {
-        http_send_data(thread_info->dst_fd, buffer, n);
+    while (thread_info->is_alive && (n = read(thread_info->src_fd, buf, 1024)) > 0) {
+        http_send_data(thread_info->dst_fd, buf, n);
     }
-    free(buffer);
+    free(buf);
     *thread_info->is_alive = 0;
-    return NULL;
 }
 
-void *client_to_server_proxy(void *arg) {
-    proxy_thread_info *client_to_server_info = (proxy_thread_info *) arg;
-    proxy(client_to_server_info);
-    return NULL;
-}
-
-void serve_proxy_request(int client, int server) {
-    int is_alive = 1;
-
-    proxy_thread_info *client_to_server_info = malloc(sizeof(proxy_thread_info));
-    client_to_server_info->src_fd = client;
-    client_to_server_info->dst_fd = server;
-    client_to_server_info->is_alive = &is_alive;
-
-    proxy_thread_info *server_to_client_info = malloc(sizeof(proxy_thread_info));
-    server_to_client_info->src_fd = server;
-    server_to_client_info->dst_fd = client;
-    server_to_client_info->is_alive = &is_alive;
-
-    pthread_t client_to_server_thread;
-    pthread_create(&client_to_server_thread, NULL, client_to_server_proxy, client_to_server_info);
-    proxy(server_to_client_info);
-
-    pthread_cancel(client_to_server_thread);
-    free(server_to_client_info);
-    free(client_to_server_info);
+void *handle_proxy(void *arg) {
+    info *thread_info = (info *) arg;
+    proxy(thread_info);
 }
 
 /*
@@ -289,7 +258,26 @@ void handle_proxy_request(int fd) {
 
     }
 
-    serve_proxy_request(fd, target_fd);
+    int is_alive = 1;
+
+    info *client_to_server_info = malloc(sizeof(info));
+    client_to_server_info->src_fd = fd;
+    client_to_server_info->dst_fd = target_fd;
+    client_to_server_info->is_alive = &is_alive;
+
+    info *server_to_client_info = malloc(sizeof(info));
+    server_to_client_info->src_fd = target_fd;
+    server_to_client_info->dst_fd = fd;
+    server_to_client_info->is_alive = &is_alive;
+
+    pthread_t client_to_server_thread;
+    pthread_create(&client_to_server_thread, NULL, handle_proxy, client_to_server_info);
+    proxy(server_to_client_info);
+
+    pthread_cancel(client_to_server_thread);
+    free(server_to_client_info);
+    free(client_to_server_info);
+
     close(target_fd);
 }
 
@@ -297,20 +285,21 @@ void *serve_request(void *arg) {
     void (*request_handler)(int) = arg;
     while (1) {
         int fd = wq_pop(&work_queue);
+        printf("\nthread %lu serve %d\n", pthread_self(), fd);
         request_handler(fd);
         close(fd);
     }
 }
 
 
-void init_thread_pool(int threads_count, void (*request_handler)(int)) {
+void init_thread_pool(int num_threads, void (*request_handler)(int)) {
     wq_init(&work_queue);
-    pthread_t *pool = malloc(sizeof(pthread_t) * threads_count);
+    pthread_t *pool = malloc(sizeof(pthread_t) * num_threads);
 
-    for (int i = 0; i < threads_count; ++i) {
+    for (int i = 0; i < num_threads; ++i) {
         int error;
         if ((error = pthread_create(pool + i, NULL, serve_request, request_handler))) {
-            perror("Failed to create a new thread");
+            perror("Thread creation failed");
             exit(error);
         }
     }
