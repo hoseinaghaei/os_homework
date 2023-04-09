@@ -325,15 +325,31 @@ void handle_proxy_request(int fd) {
     pthread_mutex_destroy(&mutex);
     pthread_cond_destroy(&cond);
 
-    close(fd);
     close(target_fd);
+}
+
+void *serve_request(void *arg) {
+    void (*request_handler)(int) = arg;
+    while (1) {
+        int fd = wq_pop(&work_queue);
+        request_handler(fd);
+        close(fd);
+    }
+    return NULL;
 }
 
 
 void init_thread_pool(int num_threads, void (*request_handler)(int)) {
-    /*
-     * TODO: Part of your solution for Task 2 goes here!
-     */
+    wq_init(&work_queue);
+    pthread_t *pool = malloc(sizeof(pthread_t) * num_threads);
+
+    for (int i = 0; i < num_threads; ++i) {
+        int error;
+        if ((error = pthread_create(pool + i, NULL, serve_request, request_handler))) {
+            perror("Thread creation failed");
+            exit(error);
+        }
+    }
 }
 
 /*
@@ -393,9 +409,9 @@ void serve_forever(int *socket_number, void (*request_handler)(int)) {
                inet_ntoa(client_address.sin_addr),
                client_address.sin_port);
 
-        // TODO: Change me?
-        request_handler(client_socket_number);
-        close(client_socket_number);
+        wq_push(&work_queue, client_socket_number);
+//        request_handler(client_socket_number);
+//        close(client_socket_number);
 
         printf("Accepted connection from %s on port %d\n",
                inet_ntoa(client_address.sin_addr),
