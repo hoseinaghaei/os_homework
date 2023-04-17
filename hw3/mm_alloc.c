@@ -8,33 +8,122 @@
 #include "mm_alloc.h"
 
 #include <stdlib.h>
+#include <unistd.h>
+#include <string.h>
 
-/* Your final implementation should comment out this macro. */
-#define MM_USE_STUBS
+s_block_ptr heap_start = NULL;
 
-void* mm_malloc(size_t size)
-{
-#ifdef MM_USE_STUBS
-    return calloc(1, size);
-#else
-#error Not implemented.
-#endif
+void *mm_malloc(size_t size) {
+    if (size <= 0) {
+        return NULL;
+    }
+    s_block_ptr current_block = heap_start;
+    s_block_ptr last_block = heap_start;
+
+    while (current_block != NULL) {
+        if (current_block->is_free && (current_block->size >= size)) {
+            split_block(current_block, size);
+            current_block->is_free = 0;
+            return current_block->ptr;
+        }
+        last_block = current_block;
+        current_block = current_block->next;
+    }
+
+    s_block_ptr new_block = extend_heap(last_block, size);
+    if (new_block != NULL) {
+        new_block->is_free = 0;
+        memset(new_block->ptr, 0, size);
+        return new_block->ptr;
+    }
+    return NULL;
 }
 
-void* mm_realloc(void* ptr, size_t size)
-{
-#ifdef MM_USE_STUBS
-    return realloc(ptr, size);
-#else
-#error Not implemented.
-#endif
+void *mm_realloc(void *ptr, size_t size) {
+
 }
 
-void mm_free(void* ptr)
-{
-#ifdef MM_USE_STUBS
-    free(ptr);
-#else
-#error Not implemented.
-#endif
+void mm_free(void *ptr) {
+    if (ptr == NULL) {
+        return;
+    }
+    s_block_ptr block = get_block(ptr);
+    if (block == NULL) {
+        return;
+    }
+
+    block->is_free = 1;
+    fusion(block);
 }
+
+void split_block(s_block_ptr b, size_t s) {
+    if (b->size >= s + BLOCK_SIZE) {
+        s_block_ptr new_block = (s_block_ptr) ((char *) b + s + BLOCK_SIZE);
+        new_block->size = b->size - s - BLOCK_SIZE;
+        new_block->is_free = 1;
+        new_block->next = b->next;
+        new_block->prev = b;
+        new_block->ptr = (char *) (new_block + BLOCK_SIZE);
+
+        if (b->next != NULL) {
+            b->next->prev = new_block;
+        }
+        b->size = s;
+        b->next = new_block;
+    }
+}
+
+s_block_ptr extend_heap(s_block_ptr last, size_t s) {
+    s_block_ptr new_block = (s_block_ptr) sbrk(s + BLOCK_SIZE);
+    if (new_block == (void *) -1) {
+        return NULL;
+    }
+    new_block->size = s;
+    new_block->is_free = 1;
+    if (last != NULL) {
+        last->next = new_block;
+        new_block->prev = last;
+    } else {
+        heap_start = new_block;
+    }
+    new_block->ptr = (char *) (new_block + BLOCK_SIZE);
+    return new_block;
+}
+
+s_block_ptr get_block(void *p) {
+    s_block_ptr current_block = heap_start;
+    while (current_block != NULL) {
+        if (current_block->ptr == p) {
+            return current_block;
+        }
+        current_block = current_block->next;
+    }
+    return NULL;
+}
+
+void fusion(s_block_ptr b) {
+    if (b->prev != NULL && b->prev->is_free) {
+        b->prev->size += b->size + BLOCK_SIZE;
+        memset(b->prev->ptr, 0, b->size);
+        b->prev->next = b->next;
+        if (b->next != NULL) {
+            b->next->prev = b->prev;
+        }
+        if (b->next != NULL && b->next->is_free) {
+            b->prev->size += b->next->size + BLOCK_SIZE;
+            memset(b->prev->ptr, 0, b->prev->size);
+            b->prev->next = b->next->next;
+            if (b->next->next != NULL) {
+                b->next->next->prev = b->prev;
+            }
+        }
+    } else if (b->next != NULL && b->next->is_free) {
+        b->size += b->next->size + BLOCK_SIZE;
+        b->next = b->next->next;
+        if (b->next->next != NULL) {
+            b->next->next->prev = b;
+        }
+    }
+    memset(b->ptr, 0, b->size);
+}
+
