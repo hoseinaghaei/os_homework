@@ -104,14 +104,12 @@ s_block_ptr get_block(void *p) {
 void fusion(s_block_ptr b) {
     if (b->prev != NULL && b->prev->is_free) {
         b->prev->size += b->size + BLOCK_SIZE;
-        memset(b->prev->ptr, 0, b->size);
         b->prev->next = b->next;
         if (b->next != NULL) {
             b->next->prev = b->prev;
         }
         if (b->next != NULL && b->next->is_free) {
             b->prev->size += b->next->size + BLOCK_SIZE;
-            memset(b->prev->ptr, 0, b->prev->size);
             b->prev->next = b->next->next;
             if (b->next->next != NULL) {
                 b->next->next->prev = b->prev;
