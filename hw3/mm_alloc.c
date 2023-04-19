@@ -84,9 +84,10 @@ s_block_ptr extend_heap(s_block_ptr last, size_t s) {
         last->next = new_block;
         new_block->prev = last;
     } else {
+        new_block->prev = NULL;
         heap_start = new_block;
     }
-    new_block->ptr = (char *) (new_block + BLOCK_SIZE);
+    new_block->ptr = new_block + BLOCK_SIZE;
     return new_block;
 }
 
