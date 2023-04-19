@@ -18,10 +18,10 @@ void *mm_malloc(size_t size) {
         return NULL;
     }
     s_block_ptr current_block = heap_start;
-    s_block_ptr last_block = heap_start;
+    s_block_ptr last_block = NULL;
 
     while (current_block != NULL) {
-        if (current_block->is_free && (current_block->size >= size)) {
+        if (current_block->is_free && current_block->size >= size) {
             split_block(current_block, size);
             current_block->is_free = 0;
             return current_block->ptr;
@@ -76,13 +76,13 @@ void mm_free(void *ptr) {
 }
 
 void split_block(s_block_ptr b, size_t s) {
-    if (b->size >= s + BLOCK_SIZE) {
+    if (b->size > s + BLOCK_SIZE) {
         s_block_ptr new_block = (s_block_ptr) ((char *) b + s + BLOCK_SIZE);
         new_block->size = b->size - s - BLOCK_SIZE;
         new_block->is_free = 1;
         new_block->next = b->next;
         new_block->prev = b;
-        new_block->ptr = (char *) (new_block + BLOCK_SIZE);
+        new_block->ptr = (char *)new_block + BLOCK_SIZE;
 
         if (b->next != NULL) {
             b->next->prev = new_block;
