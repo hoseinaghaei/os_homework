@@ -30,13 +30,7 @@ void *mm_malloc(size_t size) {
         current_block = current_block->next;
     }
 
-    s_block_ptr new_block = extend_heap(last_block, size);
-    if (new_block != NULL) {
-        new_block->is_free = 0;
-        memset(new_block->ptr, 0, size);
-        return new_block->ptr;
-    }
-    return NULL;
+    return extend_heap(last_block, size);
 }
 
 void *mm_realloc(void *ptr, size_t size) {
@@ -79,12 +73,12 @@ void mm_free(void *ptr) {
 
 void split_block(s_block_ptr b, size_t s) {
     if (b->size > s + BLOCK_SIZE) {
-        s_block_ptr new_block = (s_block_ptr) ((char *) b + s + BLOCK_SIZE);
+        s_block_ptr new_block = (s_block_ptr) (b->ptr + s);
         new_block->size = b->size - s - BLOCK_SIZE;
         new_block->is_free = 1;
         new_block->next = b->next;
         new_block->prev = b;
-        new_block->ptr = (char *)new_block + BLOCK_SIZE;
+        new_block->ptr = b->ptr + s + BLOCK_SIZE;
 
         if (b->next != NULL) {
             b->next->prev = new_block;
@@ -94,22 +88,23 @@ void split_block(s_block_ptr b, size_t s) {
     }
 }
 
-s_block_ptr extend_heap(s_block_ptr last, size_t s) {
+void *extend_heap(s_block_ptr last, size_t s) {
     s_block_ptr new_block = (s_block_ptr) sbrk(s + BLOCK_SIZE);
     if (new_block == (void *) -1) {
         return NULL;
     }
-    new_block->size = s;
-    new_block->is_free = 1;
     if (last != NULL) {
         last->next = new_block;
-        new_block->prev = last;
     } else {
-        new_block->prev = NULL;
         heap_start = new_block;
     }
-    new_block->ptr = new_block + 1;
-    return new_block;
+    new_block->prev = last;
+    new_block->next = NULL;
+    new_block->is_free = 0;
+    new_block->size = s;
+    new_block->ptr = new_block + BLOCK_SIZE;
+    memset(new_block->ptr, 0, s);
+    return new_block->ptr;
 }
 
 s_block_ptr get_block(void *p) {

@@ -42,7 +42,7 @@ s_block_ptr get_block (void *p);
 /* Add a new block at the of heap,
  * return NULL if things go wrong
  */
-s_block_ptr extend_heap (s_block_ptr last , size_t s);
+void *extend_heap (s_block_ptr last , size_t s);
 
 
 #ifdef __cplusplus
