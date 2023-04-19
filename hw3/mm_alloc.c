@@ -106,7 +106,6 @@ s_block_ptr extend_heap(s_block_ptr last, size_t s) {
         new_block->prev = NULL;
         heap_start = new_block;
     }
-    new_block->next = NULL;
     new_block->ptr = new_block + 1;
     return new_block;
 }
