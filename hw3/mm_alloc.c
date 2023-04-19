@@ -88,6 +88,7 @@ void split_block(s_block_ptr b, size_t s) {
         }
         b->size = s;
         b->next = new_block;
+        memset(new_block->ptr, 0, new_block->size);
     }
 }
 
