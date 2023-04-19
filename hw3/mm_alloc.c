@@ -106,6 +106,7 @@ s_block_ptr extend_heap(s_block_ptr last, size_t s) {
         new_block->prev = NULL;
         heap_start = new_block;
     }
+    new_block->next = NULL;
     new_block->ptr = new_block + 1;
     return new_block;
 }
@@ -128,18 +129,13 @@ void fusion(s_block_ptr b) {
         if (b->next != NULL) {
             b->next->prev = b->prev;
         }
-        if (b->next != NULL && b->next->is_free) {
-            b->prev->size += b->next->size + BLOCK_SIZE;
-            b->prev->next = b->next->next;
-            if (b->next->next != NULL) {
-                b->next->next->prev = b->prev;
-            }
-        }
-    } else if (b->next != NULL && b->next->is_free) {
+        b = b->prev;
+    }
+    if (b->next != NULL && b->next->is_free) {
         b->size += b->next->size + BLOCK_SIZE;
         b->next = b->next->next;
-        if (b->next->next != NULL) {
-            b->next->next->prev = b;
+        if (b->next != NULL) {
+            b->next->prev = b;
         }
     }
     memset(b->ptr, 0, b->size);
