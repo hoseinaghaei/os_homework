@@ -40,7 +40,26 @@ void *mm_malloc(size_t size) {
 }
 
 void *mm_realloc(void *ptr, size_t size) {
+    if (size == 0) {
+        mm_free(ptr);
+        return NULL;
+    }
+    if (ptr == NULL) {
+        return mm_malloc(size);
+    }
 
+    s_block_ptr block = get_block(ptr);
+    if (block == NULL) {
+        return NULL;
+    }
+    void *new_ptr = mm_malloc(size);
+    if (new_ptr == NULL) {
+        return NULL;
+    }
+    size_t size_to_copy = size <= block->size ? size : block->size;
+    memcpy(new_ptr, block->ptr, size_to_copy);
+    mm_free(block);
+    return new_ptr;
 }
 
 void mm_free(void *ptr) {
