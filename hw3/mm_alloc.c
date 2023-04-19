@@ -56,7 +56,7 @@ void *mm_realloc(void *ptr, size_t size) {
     if (new_ptr == NULL) {
         return NULL;
     }
-    memset(new_ptr, 0, size);
+
     size_t size_to_copy = size <= block->size ? size : block->size;
     memcpy(new_ptr, block->ptr, size_to_copy);
     mm_free(block);
