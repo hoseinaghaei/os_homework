@@ -1,4 +1,4 @@
-I finished judging your code on 19-04-2023 at 14:03:40.
+I finished judging your code on 19-04-2023 at 14:16:19.
 
 I ran your code on each test case separately! You can see the results below:
 
@@ -48,7 +48,7 @@ Although you got no points from this test, below is the output of the test (STDO
 ----------<BEGIN AUTO GENERATED OUTPUT>-----------
 
 Ok I just assured that you couldn't allocated 800 GB.
-You must have been able to realloc (2)
+You didn't zero data in realloc
 
 -----------<END AUTO GENERATED OUTPUT>------------
 ================================================================================================================
@@ -58,4 +58,4 @@ You must have been able to realloc (2)
 Test 10: Two dimensional array with arithmetic calculations on a real-world problem --> Time limit exceeded(20s)! 0 points :(
 ================================================================================================================
 
-Your final grade is: 68.7/100.0epoch: 1681913021
+Your final grade is: 68.7/100.0epoch: 1681913779
