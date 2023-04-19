@@ -14,7 +14,7 @@
 s_block_ptr heap_start = NULL;
 
 void *mm_malloc(size_t size) {
-    if (size <= 0) {
+    if (size == 0) {
         return NULL;
     }
     s_block_ptr current_block = heap_start;
@@ -40,12 +40,12 @@ void *mm_malloc(size_t size) {
 }
 
 void *mm_realloc(void *ptr, size_t size) {
+    if (ptr == NULL) {
+        return mm_malloc(size);
+    }
     if (size == 0) {
         mm_free(ptr);
         return NULL;
-    }
-    if (ptr == NULL) {
-        return mm_malloc(size);
     }
 
     s_block_ptr block = get_block(ptr);
@@ -72,6 +72,7 @@ void mm_free(void *ptr) {
     }
 
     block->is_free = 1;
+    memset(block->ptr, 0, block->size);
     fusion(block);
 }
 
@@ -137,6 +138,5 @@ void fusion(s_block_ptr b) {
             b->next->prev = b;
         }
     }
-    memset(b->ptr, 0, b->size);
 }
 
