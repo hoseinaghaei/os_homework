@@ -46,16 +46,12 @@ void *mm_realloc(void *ptr, size_t size) {
     if (block == NULL) {
         return NULL;
     }
-    if (size <= block->size) {
-        split_block(block, size);
-        return block->ptr;
-    }
-
     void *new_ptr = mm_malloc(size);
     if (new_ptr == NULL) {
         return NULL;
     }
-    memcpy(new_ptr, block->ptr, block->size);
+    size_t size_to_copy = size <= block->size ? size : block->size;
+    memcpy(new_ptr, block->ptr, size_to_copy);
     mm_free(block->ptr);
     return new_ptr;
 }
@@ -88,7 +84,6 @@ void split_block(s_block_ptr b, size_t s) {
         }
         b->size = s;
         b->next = new_block;
-        memset(new_block->ptr, 0, new_block->size);
     }
 }
 
