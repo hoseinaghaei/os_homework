@@ -42,3 +42,10 @@ To access and work on any of the homework assignments, follow these steps:
 
    ```bash
    git clone https://github.com/hoseinaghaei/os_homework.git
+2. Navigate to the specific homework assignment folder (e.g., hw0, hw1, etc.).
+
+3. Review the assignment instructions provided in the respective PDF files or Markdown documents.
+
+4. Complete the assignment according to the instructions.
+
+5. Each homework folder contains a Makefile to help you build and run your code.
